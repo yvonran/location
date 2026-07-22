@@ -33,4 +33,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(QuoteLine::class);
     }
+
+    public function reservationLines(): HasMany
+    {
+        return $this->hasMany(ReservationLine::class);
+    }
 }
