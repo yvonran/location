@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'quote_id', 'vehicle_id', 'route_id', 'service_type_id', 'start_date',
@@ -53,5 +54,10 @@ class QuoteLine extends Model
     public function serviceType(): BelongsTo
     {
         return $this->belongsTo(ServiceType::class);
+    }
+
+    public function quoteLineOptions(): HasMany
+    {
+        return $this->hasMany(QuoteLineOption::class);
     }
 }

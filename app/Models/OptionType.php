@@ -6,6 +6,7 @@ use App\Enums\AmountMode;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'default_mode', 'default_value', 'active'])]
 class OptionType extends Model
@@ -19,5 +20,10 @@ class OptionType extends Model
             'default_value' => 'decimal:2',
             'active' => 'boolean',
         ];
+    }
+
+    public function quoteLineOptions(): HasMany
+    {
+        return $this->hasMany(QuoteLineOption::class);
     }
 }
