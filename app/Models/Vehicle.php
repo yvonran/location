@@ -28,4 +28,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(Tariff::class);
     }
+
+    public function quoteLines(): HasMany
+    {
+        return $this->hasMany(QuoteLine::class);
+    }
 }
