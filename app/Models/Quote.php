@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['number', 'customer_id', 'user_id', 'quote_date', 'status', 'subtotal', 'total', 'notes'])]
@@ -38,5 +39,10 @@ class Quote extends Model
     public function quoteLines(): HasMany
     {
         return $this->hasMany(QuoteLine::class);
+    }
+
+    public function reservation(): HasOne
+    {
+        return $this->hasOne(Reservation::class);
     }
 }
