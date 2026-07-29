@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Configuration\BrandController;
+use App\Http\Controllers\Configuration\SimulationSettingController;
 use App\Http\Controllers\Configuration\VehicleModelController;
 use App\Http\Controllers\Configuration\VehicleTypeController;
 use App\Http\Controllers\QuoteController;
@@ -35,6 +36,11 @@ Route::middleware(['auth', 'verified', 'role:'.Roles::SuperAdmin])
         Route::resource('vehicle-models', VehicleModelController::class)
             ->parameters(['vehicle-models' => 'vehicle_model'])
             ->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('simulation-settings', [SimulationSettingController::class, 'edit'])
+            ->name('simulation-settings.edit');
+        Route::put('simulation-settings', [SimulationSettingController::class, 'update'])
+            ->name('simulation-settings.update');
     });
 
 require __DIR__.'/settings.php';
