@@ -83,6 +83,7 @@ interface LineState {
     distance_km: number | null;
     service_type_id: number | null;
     start_date: string;
+    departure_time: string;
     number_of_days: number;
     discount_type: 'fixed' | 'percentage' | 'none';
     discount_value: number | null;
@@ -96,6 +97,7 @@ function makeLine(): LineState {
         distance_km: null,
         service_type_id: null,
         start_date: new Date().toISOString().slice(0, 10),
+        departure_time: '',
         number_of_days: 1,
         discount_type: 'none',
         discount_value: null,
@@ -137,6 +139,7 @@ function submit() {
             distance_km: line.route_id === 'none' ? line.distance_km : null,
             service_type_id: line.service_type_id,
             start_date: line.start_date,
+            departure_time: line.departure_time || null,
             number_of_days: line.number_of_days,
             discount_type:
                 line.discount_type === 'none' ? null : line.discount_type,
@@ -352,6 +355,22 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                         <InputError
                             :message="
                                 lineErrors[`lines.${index}.number_of_days`]
+                            "
+                        />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label :for="`departure_time_${index}`"
+                            >Heure de départ (optionnel)</Label
+                        >
+                        <Input
+                            :id="`departure_time_${index}`"
+                            v-model="line.departure_time"
+                            type="time"
+                        />
+                        <InputError
+                            :message="
+                                lineErrors[`lines.${index}.departure_time`]
                             "
                         />
                     </div>

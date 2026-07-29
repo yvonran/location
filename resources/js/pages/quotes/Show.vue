@@ -43,6 +43,7 @@ interface ServiceTypeRef {
 interface QuoteLine {
     id: number;
     start_date: string;
+    departure_time: string | null;
     number_of_days: number;
     distance_km: string;
     daily_rate: string;
@@ -156,6 +157,10 @@ const statusLabels: Record<Quote['status'], string> = {
                 <div>
                     <dt class="text-muted-foreground">Jours</dt>
                     <dd>{{ line.number_of_days }}</dd>
+                </div>
+                <div v-if="line.departure_time">
+                    <dt class="text-muted-foreground">Départ</dt>
+                    <dd>{{ line.departure_time }}</dd>
                 </div>
                 <div>
                     <dt class="text-muted-foreground">Prix / jour</dt>
