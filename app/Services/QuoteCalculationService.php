@@ -58,7 +58,7 @@ class QuoteCalculationService
 
     /**
      * @return array{
-     *     vehicle_id: int, route_id: ?int, service_type_id: int, start_date: string,
+     *     vehicle_id: int, route_id: ?int, service_type_id: int, start_date: string, departure_time: ?string,
      *     number_of_days: int, distance_km: float, daily_rate: float, service_coefficient: float,
      *     discount_type: ?AmountMode, discount_value: ?float, discount_amount: float,
      *     options_amount: float, line_total: float, options: array
@@ -99,6 +99,7 @@ class QuoteCalculationService
             'route_id' => $input['route_id'] ?? null,
             'service_type_id' => $serviceType->id,
             'start_date' => $input['start_date'],
+            'departure_time' => $input['departure_time'] ?? null,
             'number_of_days' => $numberOfDays,
             'distance_km' => $distanceKm,
             'daily_rate' => $dailyRate,

@@ -73,6 +73,69 @@ class QuoteCalculationServiceTest extends TestCase
         $this->assertSame(AmountMode::Percentage, $line->quoteLineOptions->first()->mode);
     }
 
+    public function test_it_persists_the_optional_departure_time(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
+            'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
+            'has_air_conditioning' => true,
+        ]);
+        Tariff::create([
+            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
+            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
+        ]);
+        $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
+        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $user = User::factory()->create();
+
+        $service = app(QuoteCalculationService::class);
+
+        $quote = $service->createQuote($customer->id, $user->id, [
+            [
+                'vehicle_id' => $vehicle->id,
+                'route_id' => null,
+                'distance_km' => 450,
+                'service_type_id' => $serviceType->id,
+                'start_date' => '2026-08-01',
+                'number_of_days' => 3,
+                'departure_time' => '06:30',
+            ],
+        ]);
+
+        $this->assertSame('06:30', $quote->quoteLines->first()->departure_time);
+    }
+
+    public function test_the_departure_time_defaults_to_null(): void
+    {
+        $vehicle = Vehicle::create([
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
+            'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
+            'has_air_conditioning' => true,
+        ]);
+        Tariff::create([
+            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
+            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
+        ]);
+        $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
+        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $user = User::factory()->create();
+
+        $service = app(QuoteCalculationService::class);
+
+        $quote = $service->createQuote($customer->id, $user->id, [
+            [
+                'vehicle_id' => $vehicle->id,
+                'route_id' => null,
+                'distance_km' => 450,
+                'service_type_id' => $serviceType->id,
+                'start_date' => '2026-08-01',
+                'number_of_days' => 3,
+            ],
+        ]);
+
+        $this->assertNull($quote->quoteLines->first()->departure_time);
+    }
+
     public function test_it_throws_when_no_tariff_matches(): void
     {
         $vehicle = Vehicle::create([

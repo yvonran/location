@@ -74,6 +74,38 @@ class QuoteControllerTest extends TestCase
         $response->assertRedirect(route('quotes.show', $quote));
     }
 
+    public function test_a_malformed_departure_time_is_rejected(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $vehicle = Vehicle::create([
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
+            'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
+            'has_air_conditioning' => true,
+        ]);
+        Tariff::create([
+            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
+            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
+        ]);
+        $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
+
+        $this->actingAs($user)->post(route('quotes.store'), [
+            'customer_id' => $customer->id,
+            'lines' => [
+                [
+                    'vehicle_id' => $vehicle->id,
+                    'distance_km' => 450,
+                    'service_type_id' => $serviceType->id,
+                    'start_date' => '2026-08-01',
+                    'number_of_days' => 3,
+                    'departure_time' => 'not-a-time',
+                ],
+            ],
+        ])->assertSessionHasErrors('lines.0.departure_time');
+
+        $this->assertDatabaseCount('quotes', 0);
+    }
+
     public function test_it_returns_a_validation_error_when_no_tariff_matches(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
