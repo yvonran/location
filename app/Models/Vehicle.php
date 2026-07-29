@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,6 +40,14 @@ class Vehicle extends Model
                 ? Storage::disk('public')->url($this->image_path)
                 : null,
         );
+    }
+
+    /**
+     * @return HasOne<RentalCondition, $this>
+     */
+    public function rentalCondition(): HasOne
+    {
+        return $this->hasOne(RentalCondition::class);
     }
 
     public function tariffs(): HasMany

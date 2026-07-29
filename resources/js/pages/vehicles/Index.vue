@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Car, Pencil, Snowflake, Trash2 } from '@lucide/vue';
+import { Car, Coins, Pencil, Snowflake, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { dashboard } from '@/routes';
 import { create, destroy, edit } from '@/routes/vehicles';
+import { edit as editConditions } from '@/routes/vehicles/conditions';
 import type { Vehicle, VehicleStatus } from '@/types/vehicle';
 
 interface Paginated<T> {
@@ -164,6 +165,14 @@ function remove(vehicle: Vehicle) {
                         </td>
                         <td class="p-3">
                             <div class="flex justify-end gap-1">
+                                <Button variant="ghost" size="sm" as-child>
+                                    <Link
+                                        :href="editConditions(vehicle.id).url"
+                                        :title="`Conditions de location de ${vehicle.name}`"
+                                    >
+                                        <Coins class="size-4" />
+                                    </Link>
+                                </Button>
                                 <Button variant="ghost" size="sm" as-child>
                                     <Link
                                         :href="edit(vehicle.id).url"

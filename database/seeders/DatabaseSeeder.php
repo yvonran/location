@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\AmountMode;
+use App\Enums\RentalZone;
 use App\Models\Customer;
 use App\Models\OptionType;
+use App\Models\RentalCondition;
 use App\Models\Route;
 use App\Models\ServiceType;
 use App\Models\Tariff;
@@ -61,6 +63,31 @@ class DatabaseSeeder extends Seeder
                 'max_days' => $maxDays,
                 'daily_rate' => $dailyRate,
             ]);
+        }
+
+        foreach ([$starex, $landCruiser] as $vehicle) {
+            $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
+            $premium = $vehicle->is($landCruiser) ? 50000 : 0;
+
+            foreach ([
+                [RentalZone::City, 1, 5, 180000],
+                [RentalZone::City, 6, null, 160000],
+                [RentalZone::Suburb, 1, 5, 220000],
+                [RentalZone::Suburb, 6, null, 200000],
+                [RentalZone::LongDistance, 1, 5, 250000],
+                [RentalZone::LongDistance, 6, 10, 220000],
+                [RentalZone::LongDistance, 11, null, 200000],
+                [RentalZone::VeryLongDistance, 1, 5, 350000],
+                [RentalZone::VeryLongDistance, 6, 10, 310000],
+                [RentalZone::VeryLongDistance, 11, null, 280000],
+            ] as [$zone, $minDays, $maxDays, $dailyRate]) {
+                $condition->rentalRates()->create([
+                    'zone' => $zone,
+                    'min_days' => $minDays,
+                    'max_days' => $maxDays,
+                    'daily_rate' => $dailyRate + $premium,
+                ]);
+            }
         }
 
         foreach ([
