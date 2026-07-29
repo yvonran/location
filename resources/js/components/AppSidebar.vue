@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
+    Calculator,
     Car,
     FileText,
     FolderGit2,
@@ -26,9 +27,11 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as brandsIndex } from '@/routes/configuration/brands';
+import { edit as simulationSettingsEdit } from '@/routes/configuration/simulation-settings';
 import { index as vehicleModelsIndex } from '@/routes/configuration/vehicle-models';
 import { index as vehicleTypesIndex } from '@/routes/configuration/vehicle-types';
 import { index as quotesIndex } from '@/routes/quotes';
+import { index as simulationsIndex } from '@/routes/simulations';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { NavItem } from '@/types';
 
@@ -53,6 +56,11 @@ const configurationNavItems: NavItem[] = [
         href: vehicleModelsIndex(),
         icon: Settings2,
     },
+    {
+        title: 'Réglages simulation',
+        href: simulationSettingsEdit(),
+        icon: Calculator,
+    },
 ];
 
 const mainNavItems: NavItem[] = [
@@ -70,6 +78,11 @@ const mainNavItems: NavItem[] = [
         title: 'Devis',
         href: quotesIndex(),
         icon: FileText,
+    },
+    {
+        title: 'Simulations',
+        href: simulationsIndex(),
+        icon: Calculator,
     },
 ];
 
