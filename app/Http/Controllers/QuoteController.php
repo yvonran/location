@@ -18,9 +18,7 @@ use Inertia\Response;
 
 class QuoteController extends Controller
 {
-    public function __construct(private readonly QuoteCalculationService $quoteCalculationService)
-    {
-    }
+    public function __construct(private readonly QuoteCalculationService $quoteCalculationService) {}
 
     public function index(): Response
     {
@@ -33,7 +31,8 @@ class QuoteController extends Controller
     {
         return Inertia::render('quotes/Create', [
             'customers' => Customer::orderBy('name')->get(['id', 'name']),
-            'vehicles' => Vehicle::where('status', VehicleStatus::Available)->orderBy('name')->get(['id', 'name', 'brand', 'model']),
+            'vehicles' => Vehicle::withIdentity()->where('status', VehicleStatus::Available)
+                ->orderBy('name')->get(['id', 'name', 'vehicle_model_id']),
             'routes' => Route::orderBy('name')->get(['id', 'name', 'departure_city', 'arrival_city', 'distance_km']),
             'serviceTypes' => ServiceType::where('active', true)->orderBy('name')->get(['id', 'name', 'coefficient']),
             'optionTypes' => OptionType::where('active', true)->orderBy('name')->get(['id', 'name', 'default_mode', 'default_value']),
@@ -60,7 +59,7 @@ class QuoteController extends Controller
     {
         $quote->load([
             'customer', 'user',
-            'quoteLines.vehicle', 'quoteLines.route', 'quoteLines.serviceType',
+            'quoteLines.vehicle.vehicleModel.brand', 'quoteLines.route', 'quoteLines.serviceType',
             'quoteLines.quoteLineOptions.optionType',
         ]);
 

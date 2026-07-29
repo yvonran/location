@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\VehicleStatus;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,8 +27,7 @@ class VehicleControllerTest extends TestCase
     {
         return array_merge([
             'name' => 'Starex 1',
-            'brand' => 'Hyundai',
-            'model' => 'Starex',
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8,
             'registration_number' => '1234 TBA',
             'year' => 2020,

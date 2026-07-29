@@ -27,8 +27,8 @@ class StoreVehicleRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'brand' => ['required', 'string', 'max:255'],
-            'model' => ['required', 'string', 'max:255'],
+            // La marque découle du modèle choisi : elle n'est pas saisie séparément.
+            'vehicle_model_id' => ['required', 'integer', 'exists:vehicle_models,id'],
             'seats' => ['required', 'integer', 'min:1', 'max:255'],
             'registration_number' => ['required', 'string', 'max:255', Rule::unique('vehicles', 'registration_number')->whereNull('deleted_at')],
             'year' => ['required', 'integer', 'min:1950', 'max:'.(date('Y') + 1)],
@@ -68,8 +68,7 @@ class StoreVehicleRequest extends FormRequest
     {
         return [
             'name' => 'nom',
-            'brand' => 'marque',
-            'model' => 'modèle',
+            'vehicle_model_id' => 'modèle',
             'seats' => 'nombre de places',
             'registration_number' => 'immatriculation',
             'year' => 'année',

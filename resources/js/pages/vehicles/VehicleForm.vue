@@ -18,6 +18,10 @@ import { Separator } from '@/components/ui/separator';
 import { toZoneInputs } from '@/lib/rentalZones';
 import RentalZonesEditor from '@/pages/vehicles/RentalZonesEditor.vue';
 import { store, update } from '@/routes/vehicles';
+import type {
+    VehicleModel as VehicleModelOption,
+    VehicleType as VehicleTypeOption,
+} from '@/types/reference';
 import type { RentalZone } from '@/types/rental';
 import type { Vehicle, VehicleStatusOption } from '@/types/vehicle';
 
@@ -31,12 +35,14 @@ const props = defineProps<{
      * À la modification, elles ont leur propre formulaire.
      */
     zones?: RentalZone[];
+    vehicleModels: VehicleModelOption[];
+    vehicleTypes: VehicleTypeOption[];
 }>();
 
 const form = useForm({
     name: props.vehicle?.name ?? '',
-    brand: props.vehicle?.brand ?? '',
-    model: props.vehicle?.model ?? '',
+    vehicle_model_id:
+        props.vehicle?.vehicle_model_id ?? (null as number | null),
     seats: props.vehicle?.seats ?? 4,
     registration_number: props.vehicle?.registration_number ?? '',
     year: props.vehicle?.year ?? new Date().getFullYear(),
@@ -51,6 +57,57 @@ const form = useForm({
 });
 
 const editsZones = computed(() => props.zones !== undefined);
+
+const brandNameById = computed(
+    () =>
+        new Map(
+            props.vehicleModels.map((model) => [
+                model.id,
+                model.brand?.name ?? '',
+            ]),
+        ),
+);
+
+/**
+ * Le type n'est pas stocké sur le véhicule : il découle du modèle. On s'en sert
+ * ici comme filtre, initialisé sur le type du modèle déjà sélectionné.
+ */
+const selectedTypeId = ref<number | 'all'>(
+    props.vehicleModels.find((m) => m.id === props.vehicle?.vehicle_model_id)
+        ?.vehicle_type_id ?? 'all',
+);
+
+const modelOptions = computed(() => {
+    const models =
+        selectedTypeId.value === 'all'
+            ? props.vehicleModels
+            : props.vehicleModels.filter(
+                  (model) => model.vehicle_type_id === selectedTypeId.value,
+              );
+
+    return [...models].sort((a, b) =>
+        `${a.brand?.name ?? ''} ${a.name}`.localeCompare(
+            `${b.brand?.name ?? ''} ${b.name}`,
+            'fr',
+        ),
+    );
+});
+
+/** Un changement de type invalide un modèle qui n'en fait pas partie. */
+function onTypeChange() {
+    if (
+        form.vehicle_model_id !== null &&
+        !modelOptions.value.some((model) => model.id === form.vehicle_model_id)
+    ) {
+        form.vehicle_model_id = null;
+    }
+}
+
+const selectedBrandName = computed(() =>
+    form.vehicle_model_id === null
+        ? null
+        : (brandNameById.value.get(form.vehicle_model_id) ?? null),
+);
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedPreview = ref<string | null>(null);
@@ -126,23 +183,62 @@ function submit() {
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="brand">Marque</Label>
-                    <Input
-                        id="brand"
-                        v-model="form.brand"
-                        placeholder="Ex : Hyundai"
-                    />
-                    <InputError :message="form.errors.brand" />
+                    <Label for="vehicle_type">Type</Label>
+                    <Select
+                        v-model="selectedTypeId"
+                        @update:model-value="onTypeChange"
+                    >
+                        <SelectTrigger id="vehicle_type" class="w-full">
+                            <SelectValue placeholder="Tous les types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem :value="'all'">
+                                Tous les types
+                            </SelectItem>
+                            <SelectItem
+                                v-for="type in props.vehicleTypes"
+                                :key="type.id"
+                                :value="type.id"
+                            >
+                                {{ type.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <p class="text-xs text-muted-foreground">
+                        Filtre la liste des modèles.
+                    </p>
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="model">Modèle</Label>
-                    <Input
-                        id="model"
-                        v-model="form.model"
-                        placeholder="Ex : Starex"
-                    />
-                    <InputError :message="form.errors.model" />
+                    <Label for="vehicle_model_id">Modèle</Label>
+                    <Select v-model="form.vehicle_model_id">
+                        <SelectTrigger id="vehicle_model_id" class="w-full">
+                            <SelectValue placeholder="Choisir un modèle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="model in modelOptions"
+                                :key="model.id"
+                                :value="model.id"
+                            >
+                                {{ model.brand?.name }} — {{ model.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <p
+                        v-if="selectedBrandName"
+                        class="text-xs text-muted-foreground"
+                    >
+                        Marque : {{ selectedBrandName }}
+                    </p>
+                    <p
+                        v-else-if="modelOptions.length === 0"
+                        class="text-xs text-muted-foreground"
+                    >
+                        Aucun modèle classé dans ce type. Rattachez-en depuis la
+                        configuration.
+                    </p>
+                    <InputError :message="form.errors.vehicle_model_id" />
                 </div>
 
                 <div class="grid gap-2">

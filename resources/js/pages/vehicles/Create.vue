@@ -4,10 +4,16 @@ import Heading from '@/components/Heading.vue';
 import VehicleForm from '@/pages/vehicles/VehicleForm.vue';
 import { dashboard } from '@/routes';
 import { create, index } from '@/routes/vehicles';
+import type { VehicleModel, VehicleType } from '@/types/reference';
 import type { RentalZone } from '@/types/rental';
 import type { VehicleStatusOption } from '@/types/vehicle';
 
-defineProps<{ statuses: VehicleStatusOption[]; zones: RentalZone[] }>();
+defineProps<{
+    statuses: VehicleStatusOption[];
+    zones: RentalZone[];
+    vehicleModels: VehicleModel[];
+    vehicleTypes: VehicleType[];
+}>();
 
 defineOptions({
     layout: {
@@ -32,6 +38,8 @@ defineOptions({
         <VehicleForm
             :statuses="statuses"
             :zones="zones"
+            :vehicle-models="vehicleModels"
+            :vehicle-types="vehicleTypes"
             submit-label="Ajouter le véhicule"
         />
     </div>

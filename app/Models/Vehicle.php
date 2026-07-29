@@ -4,15 +4,17 @@ namespace App\Models;
 
 use App\Enums\VehicleStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'brand', 'model', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
+#[Fillable(['name', 'vehicle_model_id', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
 class Vehicle extends Model
 {
     use HasFactory, SoftDeletes;
@@ -40,6 +42,25 @@ class Vehicle extends Model
                 ? Storage::disk('public')->url($this->image_path)
                 : null,
         );
+    }
+
+    /**
+     * @return BelongsTo<VehicleModel, $this>
+     */
+    public function vehicleModel(): BelongsTo
+    {
+        return $this->belongsTo(VehicleModel::class);
+    }
+
+    /**
+     * Charge le modèle avec sa marque et son type : c'est ce qu'il faut pour
+     * afficher un véhicule sans requête supplémentaire.
+     *
+     * @param  Builder<Vehicle>  $query
+     */
+    public function scopeWithIdentity(Builder $query): void
+    {
+        $query->with('vehicleModel.brand', 'vehicleModel.vehicleType');
     }
 
     /**

@@ -12,6 +12,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** Ouvre le menu Configuration ; les routes le revérifient côté serveur. */
+    isSuperAdmin: boolean;
 };
 
 /* @chisel-passkeys */

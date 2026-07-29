@@ -11,6 +11,7 @@ use App\Models\QuoteLineOption;
 use App\Models\ServiceType;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -27,7 +28,7 @@ class QuoteLineOptionTest extends TestCase
             'user_id' => $user->id, 'quote_date' => '2026-07-22',
         ]);
         $vehicle = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);

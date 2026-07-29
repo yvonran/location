@@ -2,13 +2,15 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\AmountMode;
+use App\Models\Customer;
 use App\Models\Quote;
 use App\Models\QuoteLine;
-use App\Models\Customer;
 use App\Models\Route;
 use App\Models\ServiceType;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,7 +32,7 @@ class QuoteLineTest extends TestCase
     private function makeVehicle(): Vehicle
     {
         return Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
@@ -87,12 +89,12 @@ class QuoteLineTest extends TestCase
             'distance_km' => $route->distance_km,
             'daily_rate' => 250000,
             'service_coefficient' => 1,
-            'discount_type' => \App\Enums\AmountMode::Percentage,
+            'discount_type' => AmountMode::Percentage,
             'discount_value' => 10,
         ]);
 
         $this->assertTrue($line->route->is($route));
         $this->assertTrue($route->quoteLines->contains($line));
-        $this->assertSame(\App\Enums\AmountMode::Percentage, $line->fresh()->discount_type);
+        $this->assertSame(AmountMode::Percentage, $line->fresh()->discount_type);
     }
 }

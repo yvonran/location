@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +24,7 @@ class TariffsTableTest extends TestCase
     public function test_a_tariff_can_be_created_for_a_vehicle_with_no_max_bounds(): void
     {
         $vehicleId = DB::table('vehicles')->insertGetId([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true, 'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -45,7 +46,7 @@ class TariffsTableTest extends TestCase
     public function test_deleting_the_vehicle_cascades_to_its_tariffs(): void
     {
         $vehicleId = DB::table('vehicles')->insertGetId([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true, 'created_at' => now(), 'updated_at' => now(),
         ]);

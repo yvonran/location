@@ -4,6 +4,7 @@ namespace Tests\Feature\Models;
 
 use App\Enums\VehicleStatus;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +16,7 @@ class VehicleTest extends TestCase
     {
         $vehicle = Vehicle::create([
             'name' => 'Starex 1',
-            'brand' => 'Hyundai',
-            'model' => 'Starex',
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8,
             'registration_number' => '1234 TBA',
             'year' => 2020,
@@ -31,7 +31,7 @@ class VehicleTest extends TestCase
     public function test_deleting_a_vehicle_soft_deletes_it(): void
     {
         $vehicle = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);

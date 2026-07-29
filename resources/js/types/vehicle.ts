@@ -1,3 +1,5 @@
+import type { VehicleModel } from './reference';
+
 export type VehicleStatus = 'available' | 'maintenance' | 'out_of_service';
 
 export type VehicleStatusOption = {
@@ -8,8 +10,8 @@ export type VehicleStatusOption = {
 export type Vehicle = {
     id: number;
     name: string;
-    brand: string;
-    model: string;
+    vehicle_model_id: number | null;
+    vehicle_model?: VehicleModel | null;
     seats: number;
     registration_number: string;
     year: number;

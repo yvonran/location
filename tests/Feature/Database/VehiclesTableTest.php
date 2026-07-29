@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Database;
 
+use App\Models\VehicleModel;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +17,7 @@ class VehiclesTableTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('vehicles'));
         $this->assertTrue(Schema::hasColumns('vehicles', [
-            'id', 'name', 'brand', 'model', 'seats', 'registration_number',
+            'id', 'name', 'vehicle_model_id', 'seats', 'registration_number',
             'year', 'has_air_conditioning', 'status',
             'created_at', 'updated_at', 'deleted_at',
         ]));
@@ -25,8 +27,7 @@ class VehiclesTableTest extends TestCase
     {
         $id = DB::table('vehicles')->insertGetId([
             'name' => 'Starex 1',
-            'brand' => 'Hyundai',
-            'model' => 'Starex',
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8,
             'registration_number' => '1234 TBA',
             'year' => 2020,
@@ -45,8 +46,7 @@ class VehiclesTableTest extends TestCase
     {
         DB::table('vehicles')->insert([
             'name' => 'Starex 1',
-            'brand' => 'Hyundai',
-            'model' => 'Starex',
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8,
             'registration_number' => '1234 TBA',
             'year' => 2020,
@@ -55,12 +55,11 @@ class VehiclesTableTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('vehicles')->insert([
             'name' => 'Starex 2',
-            'brand' => 'Hyundai',
-            'model' => 'Starex',
+            'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8,
             'registration_number' => '1234 TBA',
             'year' => 2021,

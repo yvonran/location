@@ -1,6 +1,16 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Car, FileText, FolderGit2, LayoutGrid } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import {
+    BookOpen,
+    Car,
+    FileText,
+    FolderGit2,
+    LayoutGrid,
+    Layers,
+    Settings2,
+    Tags,
+} from '@lucide/vue';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,9 +25,35 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as brandsIndex } from '@/routes/configuration/brands';
+import { index as vehicleModelsIndex } from '@/routes/configuration/vehicle-models';
+import { index as vehicleTypesIndex } from '@/routes/configuration/vehicle-types';
 import { index as quotesIndex } from '@/routes/quotes';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { NavItem } from '@/types';
+
+const page = usePage();
+
+/** Le référentiel n'est ouvert qu'au superadmin ; les routes le vérifient aussi. */
+const isSuperAdmin = computed(() => page.props.auth?.isSuperAdmin === true);
+
+const configurationNavItems: NavItem[] = [
+    {
+        title: 'Marques',
+        href: brandsIndex(),
+        icon: Tags,
+    },
+    {
+        title: 'Types de véhicule',
+        href: vehicleTypesIndex(),
+        icon: Layers,
+    },
+    {
+        title: 'Modèles',
+        href: vehicleModelsIndex(),
+        icon: Settings2,
+    },
+];
 
 const mainNavItems: NavItem[] = [
     {
@@ -67,6 +103,11 @@ const footerNavItems: NavItem[] = [
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            <NavMain
+                v-if="isSuperAdmin"
+                :items="configurationNavItems"
+                label="Configuration"
+            />
         </SidebarContent>
 
         <SidebarFooter>

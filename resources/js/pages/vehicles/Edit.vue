@@ -2,10 +2,12 @@
 import { Head } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import { Separator } from '@/components/ui/separator';
+import { vehicleIdentity } from '@/lib/vehicles';
 import RentalConditionForm from '@/pages/vehicles/RentalConditionForm.vue';
 import VehicleForm from '@/pages/vehicles/VehicleForm.vue';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/vehicles';
+import type { VehicleModel, VehicleType } from '@/types/reference';
 import type { RentalZone } from '@/types/rental';
 import type { Vehicle, VehicleStatusOption } from '@/types/vehicle';
 
@@ -13,6 +15,8 @@ defineProps<{
     vehicle: Vehicle;
     statuses: VehicleStatusOption[];
     zones: RentalZone[];
+    vehicleModels: VehicleModel[];
+    vehicleTypes: VehicleType[];
 }>();
 
 defineOptions({
@@ -32,12 +36,14 @@ defineOptions({
     <div class="flex flex-col space-y-8 p-4">
         <Heading
             :title="vehicle.name"
-            :description="`${vehicle.brand} ${vehicle.model} — ${vehicle.registration_number}`"
+            :description="`${vehicleIdentity(vehicle)} — ${vehicle.registration_number}`"
         />
 
         <VehicleForm
             :vehicle="vehicle"
             :statuses="statuses"
+            :vehicle-models="vehicleModels"
+            :vehicle-types="vehicleTypes"
             submit-label="Enregistrer les modifications"
         />
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
+import { vehicleIdentity } from '@/lib/vehicles';
 import RentalConditionForm from '@/pages/vehicles/RentalConditionForm.vue';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/vehicles';
@@ -10,9 +11,11 @@ defineProps<{
     vehicle: {
         id: number;
         name: string;
-        brand: string;
-        model: string;
         registration_number: string;
+        vehicle_model?: {
+            name: string;
+            brand?: { name: string } | null;
+        } | null;
     };
     zones: RentalZone[];
 }>();
@@ -34,7 +37,7 @@ defineOptions({
     <div class="flex flex-col space-y-6 p-4">
         <Heading
             title="Conditions de location"
-            :description="`${vehicle.name} — ${vehicle.brand} ${vehicle.model} (${vehicle.registration_number})`"
+            :description="`${vehicle.name} — ${vehicleIdentity(vehicle)} (${vehicle.registration_number})`"
         />
 
         <RentalConditionForm :vehicle-id="vehicle.id" :zones="zones" />

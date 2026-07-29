@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { vehicleIdentity } from '@/lib/vehicles';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/quotes';
 
@@ -21,8 +22,10 @@ interface QuoteLineOption {
 interface VehicleRef {
     id: number;
     name: string;
-    brand: string;
-    model: string;
+    vehicle_model?: {
+        name: string;
+        brand?: { name: string } | null;
+    } | null;
 }
 
 interface RouteRef {
@@ -96,17 +99,28 @@ const statusLabels: Record<Quote['status'], string> = {
 
     <div class="flex flex-col space-y-6 p-4">
         <div class="flex items-center justify-between">
-            <Heading :title="`Devis ${quote.number}`" :description="quote.quote_date" />
+            <Heading
+                :title="`Devis ${quote.number}`"
+                :description="quote.quote_date"
+            />
             <Badge>{{ statusLabels[quote.status] }}</Badge>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
-            <div class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                <h3 class="mb-2 text-sm font-medium text-muted-foreground">Client</h3>
+            <div
+                class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+            >
+                <h3 class="mb-2 text-sm font-medium text-muted-foreground">
+                    Client
+                </h3>
                 <p>{{ quote.customer.name }}</p>
             </div>
-            <div class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                <h3 class="mb-2 text-sm font-medium text-muted-foreground">Agent</h3>
+            <div
+                class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+            >
+                <h3 class="mb-2 text-sm font-medium text-muted-foreground">
+                    Agent
+                </h3>
                 <p>{{ quote.user.name }}</p>
             </div>
         </div>
@@ -118,13 +132,20 @@ const statusLabels: Record<Quote['status'], string> = {
         >
             <div class="flex items-center justify-between">
                 <h3 class="font-medium">
-                    {{ line.vehicle.name }} ({{ line.vehicle.brand }} {{ line.vehicle.model }})
+                    {{ line.vehicle.name }} ({{
+                        vehicleIdentity(line.vehicle)
+                    }})
                 </h3>
-                <span class="text-sm text-muted-foreground">{{ line.service_type.name }}</span>
+                <span class="text-sm text-muted-foreground">{{
+                    line.service_type.name
+                }}</span>
             </div>
 
             <p v-if="line.route" class="text-sm text-muted-foreground">
-                Trajet : {{ line.route.name }} ({{ line.route.departure_city }} → {{ line.route.arrival_city }})
+                Trajet : {{ line.route.name }} ({{
+                    line.route.departure_city
+                }}
+                → {{ line.route.arrival_city }})
             </p>
 
             <dl class="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
@@ -147,28 +168,48 @@ const statusLabels: Record<Quote['status'], string> = {
             </dl>
 
             <ul v-if="line.quote_line_options.length" class="space-y-1 text-sm">
-                <li v-for="option in line.quote_line_options" :key="option.id" class="flex justify-between">
+                <li
+                    v-for="option in line.quote_line_options"
+                    :key="option.id"
+                    class="flex justify-between"
+                >
                     <span>{{ option.option_type.name }}</span>
                     <span>{{ formatAr(option.amount) }}</span>
                 </li>
             </ul>
 
-            <div v-if="line.discount_type" class="flex justify-between text-sm text-muted-foreground">
-                <span>Remise ({{ line.discount_type === 'percentage' ? `${line.discount_value}%` : 'fixe' }})</span>
+            <div
+                v-if="line.discount_type"
+                class="flex justify-between text-sm text-muted-foreground"
+            >
+                <span
+                    >Remise ({{
+                        line.discount_type === 'percentage'
+                            ? `${line.discount_value}%`
+                            : 'fixe'
+                    }})</span
+                >
                 <span>-{{ formatAr(line.discount_amount) }}</span>
             </div>
 
-            <div class="flex justify-between border-t border-sidebar-border/70 pt-2 font-medium dark:border-sidebar-border">
+            <div
+                class="flex justify-between border-t border-sidebar-border/70 pt-2 font-medium dark:border-sidebar-border"
+            >
                 <span>Total ligne</span>
                 <span>{{ formatAr(line.line_total) }}</span>
             </div>
         </div>
 
-        <div class="flex justify-end rounded-xl border border-sidebar-border/70 p-4 text-lg font-semibold dark:border-sidebar-border">
+        <div
+            class="flex justify-end rounded-xl border border-sidebar-border/70 p-4 text-lg font-semibold dark:border-sidebar-border"
+        >
             Total du devis : {{ formatAr(quote.total) }}
         </div>
 
-        <Link :href="index().url" class="text-sm text-muted-foreground underline">
+        <Link
+            :href="index().url"
+            class="text-sm text-muted-foreground underline"
+        >
             Retour à la liste des devis
         </Link>
     </div>

@@ -6,6 +6,8 @@ use App\Enums\VehicleStatus;
 use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
+use App\Models\VehicleType;
 use App\Services\RentalConditionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +20,7 @@ class VehicleController extends Controller
     public function index(): Response
     {
         return Inertia::render('vehicles/Index', [
-            'vehicles' => Vehicle::orderBy('name')->paginate(15),
+            'vehicles' => Vehicle::withIdentity()->orderBy('name')->paginate(15),
         ]);
     }
 
@@ -26,6 +28,7 @@ class VehicleController extends Controller
     {
         return Inertia::render('vehicles/Create', [
             'statuses' => $this->statuses(),
+            ...$this->referenceData(),
             ...$rentalConditionService->editorProps(),
         ]);
     }
@@ -53,8 +56,9 @@ class VehicleController extends Controller
     public function edit(Vehicle $vehicle, RentalConditionService $rentalConditionService): Response
     {
         return Inertia::render('vehicles/Edit', [
-            'vehicle' => $vehicle,
+            'vehicle' => $vehicle->loadMissing('vehicleModel.brand', 'vehicleModel.vehicleType'),
             'statuses' => $this->statuses(),
+            ...$this->referenceData(),
             ...$rentalConditionService->editorProps($vehicle),
         ]);
     }
@@ -85,6 +89,23 @@ class VehicleController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Véhicule supprimé.']);
 
         return to_route('vehicles.index');
+    }
+
+    /**
+     * Référentiel servant les listes déroulantes : le type filtre les modèles,
+     * et le modèle porte sa marque.
+     *
+     * @return array{vehicleModels: mixed, vehicleTypes: mixed}
+     */
+    private function referenceData(): array
+    {
+        return [
+            'vehicleModels' => VehicleModel::query()
+                ->with('brand:id,name')
+                ->orderBy('name')
+                ->get(['id', 'brand_id', 'vehicle_type_id', 'name']),
+            'vehicleTypes' => VehicleType::orderBy('position')->orderBy('name')->get(['id', 'name']),
+        ];
     }
 
     /**

@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { vehicleIdentity } from '@/lib/vehicles';
 import { dashboard } from '@/routes';
 import { store } from '@/routes/quotes';
 
@@ -25,8 +26,10 @@ interface Customer {
 interface Vehicle {
     id: number;
     name: string;
-    brand: string;
-    model: string;
+    vehicle_model?: {
+        name: string;
+        brand?: { name: string } | null;
+    } | null;
 }
 
 interface RouteOption {
@@ -121,6 +124,7 @@ function removeLine(index: number) {
 
 function routeDistance(line: LineState): string | null {
     const route = props.routes.find((r) => r.id === line.route_id);
+
     return route ? route.distance_km : null;
 }
 
@@ -134,8 +138,10 @@ function submit() {
             service_type_id: line.service_type_id,
             start_date: line.start_date,
             number_of_days: line.number_of_days,
-            discount_type: line.discount_type === 'none' ? null : line.discount_type,
-            discount_value: line.discount_type !== 'none' ? line.discount_value : null,
+            discount_type:
+                line.discount_type === 'none' ? null : line.discount_type,
+            discount_value:
+                line.discount_type !== 'none' ? line.discount_value : null,
             options: line.options
                 .filter((option) => option.enabled)
                 .map((option) => ({
@@ -187,7 +193,9 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                 class="space-y-4 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
             >
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-medium">Véhicule {{ index + 1 }}</h3>
+                    <h3 class="text-sm font-medium">
+                        Véhicule {{ index + 1 }}
+                    </h3>
                     <Button
                         v-if="form.lines.length > 1"
                         type="button"
@@ -203,8 +211,13 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                     <div class="grid gap-2">
                         <Label :for="`vehicle_${index}`">Véhicule</Label>
                         <Select v-model="line.vehicle_id">
-                            <SelectTrigger :id="`vehicle_${index}`" class="w-full">
-                                <SelectValue placeholder="Choisir un véhicule" />
+                            <SelectTrigger
+                                :id="`vehicle_${index}`"
+                                class="w-full"
+                            >
+                                <SelectValue
+                                    placeholder="Choisir un véhicule"
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
@@ -212,18 +225,29 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                                     :key="vehicle.id"
                                     :value="vehicle.id"
                                 >
-                                    {{ vehicle.name }} ({{ vehicle.brand }} {{ vehicle.model }})
+                                    {{ vehicle.name }} ({{
+                                        vehicleIdentity(vehicle)
+                                    }})
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="lineErrors[`lines.${index}.vehicle_id`]" />
+                        <InputError
+                            :message="lineErrors[`lines.${index}.vehicle_id`]"
+                        />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label :for="`service_type_${index}`">Type de prestation</Label>
+                        <Label :for="`service_type_${index}`"
+                            >Type de prestation</Label
+                        >
                         <Select v-model="line.service_type_id">
-                            <SelectTrigger :id="`service_type_${index}`" class="w-full">
-                                <SelectValue placeholder="Choisir une prestation" />
+                            <SelectTrigger
+                                :id="`service_type_${index}`"
+                                class="w-full"
+                            >
+                                <SelectValue
+                                    placeholder="Choisir une prestation"
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
@@ -235,27 +259,47 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="lineErrors[`lines.${index}.service_type_id`]" />
+                        <InputError
+                            :message="
+                                lineErrors[`lines.${index}.service_type_id`]
+                            "
+                        />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label :for="`route_${index}`">Trajet (optionnel)</Label>
+                        <Label :for="`route_${index}`"
+                            >Trajet (optionnel)</Label
+                        >
                         <Select v-model="line.route_id">
-                            <SelectTrigger :id="`route_${index}`" class="w-full">
-                                <SelectValue placeholder="Aucun trajet — saisir la distance" />
+                            <SelectTrigger
+                                :id="`route_${index}`"
+                                class="w-full"
+                            >
+                                <SelectValue
+                                    placeholder="Aucun trajet — saisir la distance"
+                                />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none">Aucun trajet — saisir la distance</SelectItem>
+                                <SelectItem value="none"
+                                    >Aucun trajet — saisir la
+                                    distance</SelectItem
+                                >
                                 <SelectItem
                                     v-for="route in props.routes"
                                     :key="route.id"
                                     :value="route.id"
                                 >
-                                    {{ route.name }} ({{ route.departure_city }} → {{ route.arrival_city }}, {{ route.distance_km }} km)
+                                    {{ route.name }} ({{
+                                        route.departure_city
+                                    }}
+                                    → {{ route.arrival_city }},
+                                    {{ route.distance_km }} km)
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="lineErrors[`lines.${index}.route_id`]" />
+                        <InputError
+                            :message="lineErrors[`lines.${index}.route_id`]"
+                        />
                     </div>
 
                     <div class="grid gap-2">
@@ -266,16 +310,32 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                             min="0"
                             step="0.01"
                             :disabled="line.route_id !== 'none'"
-                            :model-value="line.route_id !== 'none' ? routeDistance(line) ?? undefined : line.distance_km ?? undefined"
-                            @update:model-value="(v) => (line.distance_km = v ? Number(v) : null)"
+                            :model-value="
+                                line.route_id !== 'none'
+                                    ? (routeDistance(line) ?? undefined)
+                                    : (line.distance_km ?? undefined)
+                            "
+                            @update:model-value="
+                                (v) => (line.distance_km = v ? Number(v) : null)
+                            "
                         />
-                        <InputError :message="lineErrors[`lines.${index}.distance_km`]" />
+                        <InputError
+                            :message="lineErrors[`lines.${index}.distance_km`]"
+                        />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label :for="`start_date_${index}`">Date de début</Label>
-                        <Input :id="`start_date_${index}`" v-model="line.start_date" type="date" />
-                        <InputError :message="lineErrors[`lines.${index}.start_date`]" />
+                        <Label :for="`start_date_${index}`"
+                            >Date de début</Label
+                        >
+                        <Input
+                            :id="`start_date_${index}`"
+                            v-model="line.start_date"
+                            type="date"
+                        />
+                        <InputError
+                            :message="lineErrors[`lines.${index}.start_date`]"
+                        />
                     </div>
 
                     <div class="grid gap-2">
@@ -285,9 +345,15 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                             type="number"
                             min="1"
                             :model-value="line.number_of_days"
-                            @update:model-value="(v) => (line.number_of_days = Number(v))"
+                            @update:model-value="
+                                (v) => (line.number_of_days = Number(v))
+                            "
                         />
-                        <InputError :message="lineErrors[`lines.${index}.number_of_days`]" />
+                        <InputError
+                            :message="
+                                lineErrors[`lines.${index}.number_of_days`]
+                            "
+                        />
                     </div>
                 </div>
 
@@ -301,7 +367,11 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                         >
                             <Checkbox v-model="option.enabled" />
                             <span class="flex-1 text-sm">
-                                {{ props.optionTypes.find((o) => o.id === option.option_type_id)?.name }}
+                                {{
+                                    props.optionTypes.find(
+                                        (o) => o.id === option.option_type_id,
+                                    )?.name
+                                }}
                             </span>
                             <Input
                                 v-if="option.enabled"
@@ -310,9 +380,14 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                                 step="0.01"
                                 class="w-24"
                                 :model-value="option.value"
-                                @update:model-value="(v) => (option.value = Number(v))"
+                                @update:model-value="
+                                    (v) => (option.value = Number(v))
+                                "
                             />
-                            <span v-if="option.enabled" class="text-xs text-muted-foreground">
+                            <span
+                                v-if="option.enabled"
+                                class="text-xs text-muted-foreground"
+                            >
                                 {{ option.mode === 'percentage' ? '%' : 'Ar' }}
                             </span>
                         </div>
@@ -323,28 +398,49 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                     <div class="grid gap-2">
                         <Label :for="`discount_type_${index}`">Remise</Label>
                         <Select v-model="line.discount_type">
-                            <SelectTrigger :id="`discount_type_${index}`" class="w-full">
+                            <SelectTrigger
+                                :id="`discount_type_${index}`"
+                                class="w-full"
+                            >
                                 <SelectValue placeholder="Aucune remise" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none">Aucune remise</SelectItem>
-                                <SelectItem value="fixed">Montant fixe (Ar)</SelectItem>
-                                <SelectItem value="percentage">Pourcentage (%)</SelectItem>
+                                <SelectItem value="none"
+                                    >Aucune remise</SelectItem
+                                >
+                                <SelectItem value="fixed"
+                                    >Montant fixe (Ar)</SelectItem
+                                >
+                                <SelectItem value="percentage"
+                                    >Pourcentage (%)</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                     </div>
 
-                    <div v-if="line.discount_type !== 'none'" class="grid gap-2">
-                        <Label :for="`discount_value_${index}`">Valeur de la remise</Label>
+                    <div
+                        v-if="line.discount_type !== 'none'"
+                        class="grid gap-2"
+                    >
+                        <Label :for="`discount_value_${index}`"
+                            >Valeur de la remise</Label
+                        >
                         <Input
                             :id="`discount_value_${index}`"
                             type="number"
                             min="0"
                             step="0.01"
                             :model-value="line.discount_value ?? undefined"
-                            @update:model-value="(v) => (line.discount_value = v ? Number(v) : null)"
+                            @update:model-value="
+                                (v) =>
+                                    (line.discount_value = v ? Number(v) : null)
+                            "
                         />
-                        <InputError :message="lineErrors[`lines.${index}.discount_value`]" />
+                        <InputError
+                            :message="
+                                lineErrors[`lines.${index}.discount_value`]
+                            "
+                        />
                     </div>
                 </div>
             </div>
@@ -363,7 +459,9 @@ const lineErrors = computed(() => form.errors as Record<string, string>);
                 ></textarea>
             </div>
 
-            <Button type="submit" :disabled="form.processing">Générer le devis</Button>
+            <Button type="submit" :disabled="form.processing"
+                >Générer le devis</Button
+            >
         </form>
     </div>
 </template>

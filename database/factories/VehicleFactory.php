@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\VehicleStatus;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +18,7 @@ class VehicleFactory extends Factory
     {
         return [
             'name' => fake()->words(2, true),
-            'brand' => fake()->randomElement(['Toyota', 'Hyundai', 'Nissan', 'Mitsubishi']),
-            'model' => fake()->word(),
+            'vehicle_model_id' => VehicleModel::factory(),
             'seats' => fake()->numberBetween(4, 30),
             'registration_number' => fake()->unique()->numerify('####').' '.fake()->randomElement(['TBA', 'TBT', 'TBM']),
             'year' => fake()->numberBetween(2015, 2026),

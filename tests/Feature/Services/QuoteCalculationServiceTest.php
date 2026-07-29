@@ -10,6 +10,7 @@ use App\Models\ServiceType;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
 use App\Services\QuoteCalculationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,7 +22,7 @@ class QuoteCalculationServiceTest extends TestCase
     public function test_it_calculates_a_line_with_service_coefficient_option_and_discount(): void
     {
         $vehicle = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
@@ -75,7 +76,7 @@ class QuoteCalculationServiceTest extends TestCase
     public function test_it_throws_when_no_tariff_matches(): void
     {
         $vehicle = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);

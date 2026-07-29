@@ -12,6 +12,8 @@ use App\Models\ReservationLine;
 use App\Models\ServiceType;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,7 +31,7 @@ class ReservationLineTest extends TestCase
             'status' => QuoteStatus::Accepted,
         ]);
         $vehicle = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
@@ -56,6 +58,6 @@ class ReservationLineTest extends TestCase
         $this->assertTrue($reservation->reservationLines->contains($line));
         $this->assertTrue($vehicle->reservationLines->contains($line));
         $this->assertSame(ReservationLineStatus::Confirmed, $line->fresh()->status);
-        $this->assertInstanceOf(\Carbon\CarbonInterface::class, $line->fresh()->end_date);
+        $this->assertInstanceOf(CarbonInterface::class, $line->fresh()->end_date);
     }
 }

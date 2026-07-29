@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Car, Coins, Pencil, Snowflake, Trash2 } from '@lucide/vue';
+import {
+    Car,
+    Coins,
+    Eye,
+    EyeOff,
+    Pencil,
+    Snowflake,
+    Trash2,
+} from '@lucide/vue';
 import { ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +20,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { vehicleIdentity } from '@/lib/vehicles';
 import { dashboard } from '@/routes';
 import { create, destroy, edit } from '@/routes/vehicles';
 import { edit as editConditions } from '@/routes/vehicles/conditions';
@@ -57,6 +66,9 @@ function formatConsumption(value: string): string {
     return `${Number(value).toLocaleString('fr-FR')} L/100 km`;
 }
 
+/** Colonne d'appoint : masquée tant que l'utilisateur ne la demande pas. */
+const showConsumption = ref(false);
+
 const preview = ref<Vehicle | null>(null);
 
 function remove(vehicle: Vehicle) {
@@ -81,9 +93,22 @@ function remove(vehicle: Vehicle) {
                 title="Véhicules"
                 description="Le parc automobile de l'agence."
             />
-            <Button as-child>
-                <Link :href="create().url">Ajouter un véhicule</Link>
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    @click="showConsumption = !showConsumption"
+                >
+                    <component
+                        :is="showConsumption ? EyeOff : Eye"
+                        class="size-4"
+                    />
+                    {{ showConsumption ? 'Masquer' : 'Afficher' }} la conso.
+                </Button>
+                <Button as-child>
+                    <Link :href="create().url">Ajouter un véhicule</Link>
+                </Button>
+            </div>
         </div>
 
         <div
@@ -100,7 +125,7 @@ function remove(vehicle: Vehicle) {
                         <th class="p-3">Places</th>
                         <th class="p-3">Année</th>
                         <th class="p-3">Clim.</th>
-                        <th class="p-3">Conso.</th>
+                        <th v-if="showConsumption" class="p-3">Conso.</th>
                         <th class="p-3">Statut</th>
                         <th class="p-3 text-right">Actions</th>
                     </tr>
@@ -135,7 +160,7 @@ function remove(vehicle: Vehicle) {
                         <td class="p-3">
                             <div class="font-medium">{{ vehicle.name }}</div>
                             <div class="text-xs text-muted-foreground">
-                                {{ vehicle.brand }} {{ vehicle.model }}
+                                {{ vehicleIdentity(vehicle) }}
                             </div>
                         </td>
                         <td class="p-3">{{ vehicle.registration_number }}</td>
@@ -148,7 +173,10 @@ function remove(vehicle: Vehicle) {
                             />
                             <span v-else class="text-muted-foreground">—</span>
                         </td>
-                        <td class="p-3 whitespace-nowrap">
+                        <td
+                            v-if="showConsumption"
+                            class="p-3 whitespace-nowrap"
+                        >
                             <template v-if="vehicle.average_consumption">
                                 {{
                                     formatConsumption(
@@ -195,7 +223,7 @@ function remove(vehicle: Vehicle) {
                     </tr>
                     <tr v-if="vehicles.data.length === 0">
                         <td
-                            colspan="9"
+                            :colspan="showConsumption ? 9 : 8"
                             class="p-6 text-center text-muted-foreground"
                         >
                             Aucun véhicule enregistré pour l'instant.
@@ -251,7 +279,7 @@ function remove(vehicle: Vehicle) {
                 <DialogHeader>
                     <DialogTitle>{{ preview.name }}</DialogTitle>
                     <DialogDescription>
-                        {{ preview.brand }} {{ preview.model }} —
+                        {{ vehicleIdentity(preview) }} —
                         {{ preview.registration_number }}
                     </DialogDescription>
                 </DialogHeader>

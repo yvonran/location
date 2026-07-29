@@ -11,8 +11,11 @@ use App\Models\ServiceType;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleModel;
+use App\Support\Roles;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -23,19 +26,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(VehicleReferenceSeeder::class);
+
+        $superAdmin = Role::firstOrCreate(['name' => Roles::SuperAdmin, 'guard_name' => 'web']);
+
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ]);
+        ])->assignRole($superAdmin);
 
         $starex = Vehicle::create([
-            'name' => 'Starex 1', 'brand' => 'Hyundai', 'model' => 'Starex',
+            'name' => 'Starex 1',
+            'vehicle_model_id' => $this->modelId('Hyundai', 'Starex'),
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
 
         $landCruiser = Vehicle::create([
-            'name' => 'Land Cruiser 1', 'brand' => 'Toyota', 'model' => 'Land Cruiser',
+            'name' => 'Land Cruiser 1',
+            'vehicle_model_id' => $this->modelId('Toyota', 'Land Cruiser'),
             'seats' => 7, 'registration_number' => '5678 TBB', 'year' => 2019,
             'has_air_conditioning' => true,
         ]);
@@ -139,5 +148,14 @@ class DatabaseSeeder extends Seeder
             'name' => 'Voahangy Rasoanaivo', 'phone' => '0331234567',
             'email' => 'voahangy.rasoanaivo@example.mg', 'address' => 'Isotry, Antananarivo',
         ]);
+    }
+
+    private function modelId(string $brand, string $model): int
+    {
+        return VehicleModel::query()
+            ->whereRelation('brand', 'name', $brand)
+            ->where('name', $model)
+            ->firstOrFail()
+            ->id;
     }
 }
