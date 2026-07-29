@@ -15,7 +15,7 @@ class RentalConditionService
      * d'édition du véhicule. Un véhicule sans conditions reçoit le découpage
      * proposé par défaut, qu'il reste libre de modifier avant d'enregistrer.
      *
-     * @return array{zones: array<int, array{name: string, max_km: int|null, rates: array<int, array{min_days: int, max_days: int|null, daily_rate: string}>}>}
+     * @return array{zones: array<int, array{name: string, max_km: int|null, rates: array<int, array{min_days: int, max_days: int|null, daily_rate: string, meal_included: bool, meal_price: string|null}>}>}
      */
     public function editorProps(?Vehicle $vehicle = null): array
     {
@@ -37,6 +37,8 @@ class RentalConditionService
                         'min_days' => $rate->min_days,
                         'max_days' => $rate->max_days,
                         'daily_rate' => $rate->daily_rate,
+                        'meal_included' => $rate->meal_included,
+                        'meal_price' => $rate->meal_price,
                     ])
                     ->all(),
             ])
@@ -70,6 +72,8 @@ class RentalConditionService
                         'min_days' => $rate['min_days'],
                         'max_days' => $rate['max_days'] ?? null,
                         'daily_rate' => $rate['daily_rate'],
+                        'meal_included' => $rate['meal_included'] ?? false,
+                        'meal_price' => $rate['meal_price'] ?? null,
                     ]);
                 }
             }

@@ -277,6 +277,29 @@ class VehicleRentalConditionControllerTest extends TestCase
         $this->assertDatabaseCount('rental_rates', 0);
     }
 
+    public function test_a_rate_can_mark_the_driver_meal_as_included_or_priced(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [[
+                'name' => 'Ville',
+                'max_km' => null,
+                'rates' => [
+                    ['min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000, 'meal_included' => true],
+                    ['min_days' => 6, 'max_days' => null, 'daily_rate' => 160000, 'meal_included' => false, 'meal_price' => 7000],
+                ],
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $rates = $vehicle->fresh()->rentalCondition->rentalZones()->first()->rentalRates()->orderBy('min_days')->get();
+
+        $this->assertTrue((bool) $rates[0]->meal_included);
+        $this->assertNull($rates[0]->meal_price);
+        $this->assertFalse((bool) $rates[1]->meal_included);
+        $this->assertSame('7000.00', (string) $rates[1]->meal_price);
+    }
+
     public function test_the_saved_zones_are_returned_when_reopening_the_form(): void
     {
         $vehicle = Vehicle::factory()->create();
@@ -290,5 +313,26 @@ class VehicleRentalConditionControllerTest extends TestCase
                 ->where('zones.0.max_km', 50)
                 ->has('zones.0.rates', 2)
                 ->where('zones.1.max_km', null));
+    }
+
+    public function test_the_meal_fields_are_returned_when_reopening_the_form(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [[
+                'name' => 'Ville',
+                'max_km' => null,
+                'rates' => [
+                    ['min_days' => 1, 'max_days' => null, 'daily_rate' => 180000, 'meal_included' => false, 'meal_price' => 7000],
+                ],
+            ]],
+        ]);
+
+        $this->actingAs($this->user())
+            ->get(route('vehicles.conditions.edit', $vehicle))
+            ->assertInertia(fn ($page) => $page
+                ->where('zones.0.rates.0.meal_included', false)
+                ->where('zones.0.rates.0.meal_price', '7000.00'));
     }
 }

@@ -23,6 +23,8 @@ trait ValidatesRentalZones
             'zones.*.rates.*.min_days' => ['required', 'integer', 'min:1'],
             'zones.*.rates.*.max_days' => ['nullable', 'integer', 'gte:zones.*.rates.*.min_days'],
             'zones.*.rates.*.daily_rate' => ['required', 'numeric', 'min:0'],
+            'zones.*.rates.*.meal_included' => ['boolean'],
+            'zones.*.rates.*.meal_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
