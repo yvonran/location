@@ -4,6 +4,9 @@ export type RentalRate = {
     max_days: number | null;
     /** Sérialisé en chaîne par le cast `decimal:2`. */
     daily_rate: string;
+    meal_included: boolean;
+    /** null tant que le repas n'est pas facturé séparément. */
+    meal_price: string | null;
 };
 
 export type RentalZone = {
@@ -18,6 +21,8 @@ export type RentalRateInput = {
     min_days: number;
     max_days: number | null;
     daily_rate: number | null;
+    meal_included: boolean;
+    meal_price: number | null;
 };
 
 export type RentalZoneInput = {

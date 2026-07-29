@@ -12,6 +12,9 @@ export function toZoneInputs(zones: RentalZone[]): RentalZoneInput[] {
             min_days: rate.min_days,
             max_days: rate.max_days,
             daily_rate: Number(rate.daily_rate),
+            meal_included: rate.meal_included,
+            meal_price:
+                rate.meal_price === null ? null : Number(rate.meal_price),
         })),
     }));
 }

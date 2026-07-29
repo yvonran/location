@@ -2,6 +2,7 @@
 import { Plus, Trash2 } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { RentalZoneInput } from '@/types/rental';
@@ -43,7 +44,13 @@ function removeZone(index: number) {
 }
 
 function addRate(zone: RentalZoneInput) {
-    zone.rates.push({ min_days: 1, max_days: null, daily_rate: null });
+    zone.rates.push({
+        min_days: 1,
+        max_days: null,
+        daily_rate: null,
+        meal_included: false,
+        meal_price: null,
+    });
 }
 
 function removeRate(zone: RentalZoneInput, index: number) {
@@ -175,103 +182,151 @@ function boundsLabel(index: number): string {
                 <div
                     v-for="(rate, rateIndex) in zone.rates"
                     :key="rateIndex"
-                    class="grid items-start gap-3 sm:grid-cols-[1fr_1fr_1.5fr_auto]"
+                    class="space-y-3 border-b border-sidebar-border/70 pb-3 last:border-0 last:pb-0 dark:border-sidebar-border"
                 >
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`min_days_${zoneIndex}_${rateIndex}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            À partir de (jours)
-                        </Label>
-                        <Input
-                            :id="`min_days_${zoneIndex}_${rateIndex}`"
-                            type="number"
-                            min="1"
-                            :model-value="rate.min_days"
-                            @update:model-value="
-                                (v) => (rate.min_days = Number(v))
-                            "
-                        />
-                        <InputError
-                            :message="
-                                errors[
-                                    `zones.${zoneIndex}.rates.${rateIndex}.min_days`
-                                ]
-                            "
-                        />
-                    </div>
-
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`max_days_${zoneIndex}_${rateIndex}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Jusqu'à (jours)
-                        </Label>
-                        <Input
-                            :id="`max_days_${zoneIndex}_${rateIndex}`"
-                            type="number"
-                            min="1"
-                            placeholder="Sans limite"
-                            :model-value="rate.max_days ?? undefined"
-                            @update:model-value="
-                                (v) =>
-                                    (rate.max_days =
-                                        v === '' || v === null
-                                            ? null
-                                            : Number(v))
-                            "
-                        />
-                        <InputError
-                            :message="
-                                errors[
-                                    `zones.${zoneIndex}.rates.${rateIndex}.max_days`
-                                ]
-                            "
-                        />
-                    </div>
-
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`daily_rate_${zoneIndex}_${rateIndex}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Tarif journalier (Ar)
-                        </Label>
-                        <Input
-                            :id="`daily_rate_${zoneIndex}_${rateIndex}`"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            :model-value="rate.daily_rate ?? undefined"
-                            @update:model-value="
-                                (v) =>
-                                    (rate.daily_rate =
-                                        v === '' || v === null
-                                            ? null
-                                            : Number(v))
-                            "
-                        />
-                        <InputError
-                            :message="
-                                errors[
-                                    `zones.${zoneIndex}.rates.${rateIndex}.daily_rate`
-                                ]
-                            "
-                        />
-                    </div>
-
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        class="mt-5 text-destructive hover:text-destructive"
-                        title="Retirer cette tranche"
-                        @click="removeRate(zone, rateIndex)"
+                    <div
+                        class="grid items-start gap-3 sm:grid-cols-[1fr_1fr_1.5fr_auto]"
                     >
-                        <Trash2 class="size-4" />
-                    </Button>
+                        <div class="grid gap-1">
+                            <Label
+                                :for="`min_days_${zoneIndex}_${rateIndex}`"
+                                class="text-xs text-muted-foreground"
+                            >
+                                À partir de (jours)
+                            </Label>
+                            <Input
+                                :id="`min_days_${zoneIndex}_${rateIndex}`"
+                                type="number"
+                                min="1"
+                                :model-value="rate.min_days"
+                                @update:model-value="
+                                    (v) => (rate.min_days = Number(v))
+                                "
+                            />
+                            <InputError
+                                :message="
+                                    errors[
+                                        `zones.${zoneIndex}.rates.${rateIndex}.min_days`
+                                    ]
+                                "
+                            />
+                        </div>
+
+                        <div class="grid gap-1">
+                            <Label
+                                :for="`max_days_${zoneIndex}_${rateIndex}`"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Jusqu'à (jours)
+                            </Label>
+                            <Input
+                                :id="`max_days_${zoneIndex}_${rateIndex}`"
+                                type="number"
+                                min="1"
+                                placeholder="Sans limite"
+                                :model-value="rate.max_days ?? undefined"
+                                @update:model-value="
+                                    (v) =>
+                                        (rate.max_days =
+                                            v === '' || v === null
+                                                ? null
+                                                : Number(v))
+                                "
+                            />
+                            <InputError
+                                :message="
+                                    errors[
+                                        `zones.${zoneIndex}.rates.${rateIndex}.max_days`
+                                    ]
+                                "
+                            />
+                        </div>
+
+                        <div class="grid gap-1">
+                            <Label
+                                :for="`daily_rate_${zoneIndex}_${rateIndex}`"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Tarif journalier (Ar)
+                            </Label>
+                            <Input
+                                :id="`daily_rate_${zoneIndex}_${rateIndex}`"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                :model-value="rate.daily_rate ?? undefined"
+                                @update:model-value="
+                                    (v) =>
+                                        (rate.daily_rate =
+                                            v === '' || v === null
+                                                ? null
+                                                : Number(v))
+                                "
+                            />
+                            <InputError
+                                :message="
+                                    errors[
+                                        `zones.${zoneIndex}.rates.${rateIndex}.daily_rate`
+                                    ]
+                                "
+                            />
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            class="mt-5 text-destructive hover:text-destructive"
+                            title="Retirer cette tranche"
+                            @click="removeRate(zone, rateIndex)"
+                        >
+                            <Trash2 class="size-4" />
+                        </Button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Checkbox
+                            :id="`meal_included_${zoneIndex}_${rateIndex}`"
+                            v-model="rate.meal_included"
+                        />
+                        <Label
+                            :for="`meal_included_${zoneIndex}_${rateIndex}`"
+                            class="font-normal"
+                        >
+                            Repas chauffeur inclus
+                        </Label>
+
+                        <template v-if="!rate.meal_included">
+                            <Label
+                                :for="`meal_price_${zoneIndex}_${rateIndex}`"
+                                class="text-xs text-muted-foreground"
+                            >
+                                Montant par repas (Ar)
+                            </Label>
+                            <Input
+                                :id="`meal_price_${zoneIndex}_${rateIndex}`"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-32"
+                                :model-value="rate.meal_price ?? undefined"
+                                @update:model-value="
+                                    (v) =>
+                                        (rate.meal_price =
+                                            v === '' || v === null
+                                                ? null
+                                                : Number(v))
+                                "
+                            />
+                            <InputError
+                                :message="
+                                    errors[
+                                        `zones.${zoneIndex}.rates.${rateIndex}.meal_price`
+                                    ]
+                                "
+                            />
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
