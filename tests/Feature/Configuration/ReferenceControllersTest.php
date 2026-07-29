@@ -252,4 +252,17 @@ class ReferenceControllersTest extends TestCase
             ->assertInertia(fn ($page) => $page->has('models.data', 1)
                 ->where('models.data.0.name', 'Getz'));
     }
+
+    public function test_models_can_be_searched_by_name(): void
+    {
+        $brand = Brand::create(['name' => 'Hyundai']);
+        VehicleModel::create(['brand_id' => $brand->id, 'name' => 'Starex SVX']);
+        VehicleModel::create(['brand_id' => $brand->id, 'name' => 'Getz']);
+
+        $this->actingAs($this->superAdmin())
+            ->get(route('configuration.vehicle-models.index', ['search' => 'starex']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('models.data', 1)
+                ->where('models.data.0.name', 'Starex SVX'));
+    }
 }

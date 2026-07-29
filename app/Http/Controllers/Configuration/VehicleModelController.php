@@ -34,7 +34,7 @@ class VehicleModelController extends Controller
                     fn ($q, $typeId) => $q->where('vehicle_type_id', $typeId),
                 ),
             )
-            ->when($filters['search'], fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
+            ->when($filters['search'], fn ($query, $search) => $query->where('vehicle_models.name', 'like', "%{$search}%"))
             ->join('brands', 'vehicle_models.brand_id', '=', 'brands.id')
             ->orderBy('brands.name')
             ->orderBy('vehicle_models.name')
