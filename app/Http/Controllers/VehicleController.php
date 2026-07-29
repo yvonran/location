@@ -6,6 +6,7 @@ use App\Enums\VehicleStatus;
 use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
 use App\Models\Vehicle;
+use App\Services\RentalConditionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -42,11 +43,12 @@ class VehicleController extends Controller
         return to_route('vehicles.index');
     }
 
-    public function edit(Vehicle $vehicle): Response
+    public function edit(Vehicle $vehicle, RentalConditionService $rentalConditionService): Response
     {
         return Inertia::render('vehicles/Edit', [
             'vehicle' => $vehicle,
             'statuses' => $this->statuses(),
+            ...$rentalConditionService->editorProps($vehicle),
         ]);
     }
 

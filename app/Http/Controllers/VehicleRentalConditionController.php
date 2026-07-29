@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RentalZone;
 use App\Http\Requests\UpdateRentalConditionRequest;
-use App\Models\RentalCondition;
 use App\Models\Vehicle;
+use App\Services\RentalConditionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -13,24 +12,13 @@ use Inertia\Response;
 
 class VehicleRentalConditionController extends Controller
 {
+    public function __construct(private readonly RentalConditionService $rentalConditionService) {}
+
     public function edit(Vehicle $vehicle): Response
     {
-        $condition = $vehicle->rentalCondition ?? new RentalCondition;
-
         return Inertia::render('vehicles/RentalCondition', [
             'vehicle' => $vehicle->only(['id', 'name', 'brand', 'model', 'registration_number']),
-            'condition' => [
-                'city_max_km' => $condition->city_max_km,
-                'suburb_max_km' => $condition->suburb_max_km,
-                'long_distance_max_km' => $condition->long_distance_max_km,
-            ],
-            'rates' => $condition->exists
-                ? $condition->rentalRates()->orderBy('zone')->orderBy('min_days')->get()
-                : [],
-            'zones' => array_map(
-                fn (RentalZone $zone) => ['value' => $zone->value, 'label' => $zone->label()],
-                RentalZone::cases(),
-            ),
+            ...$this->rentalConditionService->editorProps($vehicle),
         ]);
     }
 
@@ -56,6 +44,8 @@ class VehicleRentalConditionController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Conditions de location enregistrées.']);
 
-        return to_route('vehicles.index');
+        // Le formulaire est présent sur la page dédiée comme sur la fiche du
+        // véhicule : on renvoie l'utilisateur là où il l'a soumis.
+        return back();
     }
 }

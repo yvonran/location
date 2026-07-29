@@ -57,13 +57,47 @@ class VehicleRentalConditionControllerTest extends TestCase
                 ->has('zones', 4));
     }
 
+    public function test_the_vehicle_edit_page_carries_the_same_conditions_props(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+        $condition = RentalCondition::create([
+            'vehicle_id' => $vehicle->id,
+            'city_max_km' => 35,
+        ]);
+        $condition->rentalRates()->create([
+            'zone' => RentalZone::City, 'min_days' => 1, 'max_days' => null, 'daily_rate' => 180000,
+        ]);
+
+        $this->actingAs($this->user())
+            ->get(route('vehicles.edit', $vehicle))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('vehicles/Edit')
+                ->where('condition.city_max_km', 35)
+                ->has('rates', 1)
+                ->has('zones', 4));
+    }
+
+    public function test_saving_conditions_from_the_vehicle_edit_page_returns_there(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->actingAs($this->user())
+            ->from(route('vehicles.edit', $vehicle))
+            ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
+            ->assertRedirect(route('vehicles.edit', $vehicle));
+
+        $this->assertDatabaseCount('rental_rates', 2);
+    }
+
     public function test_conditions_and_rates_are_created_on_first_save(): void
     {
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
-            ->assertRedirect(route('vehicles.index'));
+            ->assertRedirect(route('vehicles.conditions.edit', $vehicle));
 
         $condition = $vehicle->fresh()->rentalCondition;
 
@@ -89,6 +123,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         ]);
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
             ->assertSessionHasNoErrors();
 
@@ -102,6 +137,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'city_max_km' => 100,
                 'suburb_max_km' => 60,
@@ -109,6 +145,7 @@ class VehicleRentalConditionControllerTest extends TestCase
             ->assertSessionHasErrors('suburb_max_km');
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'long_distance_max_km' => 90,
             ]))
@@ -120,6 +157,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [
                     ['zone' => 'city', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
@@ -136,6 +174,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [
                     ['zone' => 'city', 'min_days' => 1, 'max_days' => null, 'daily_rate' => 180000],
@@ -150,6 +189,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [
                     ['zone' => 'city', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
@@ -166,12 +206,14 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [['zone' => 'campagne', 'min_days' => 1, 'max_days' => null, 'daily_rate' => 1]],
             ]))
             ->assertSessionHasErrors('rates.0.zone');
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [['zone' => 'city', 'min_days' => 1, 'max_days' => null, 'daily_rate' => -5]],
             ]))
@@ -183,6 +225,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
                 'rates' => [['zone' => 'city', 'min_days' => 8, 'max_days' => 3, 'daily_rate' => 180000]],
             ]))
@@ -198,6 +241,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         ]);
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload(['rates' => []]))
             ->assertSessionHasNoErrors();
 
@@ -209,6 +253,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $vehicle = Vehicle::factory()->create();
 
         $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload(['city_max_km' => 35]));
 
         $this->actingAs($this->user())
