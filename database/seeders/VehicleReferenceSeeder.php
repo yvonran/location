@@ -20,7 +20,7 @@ class VehicleReferenceSeeder extends Seeder
     private const EXTRA_MODELS = [
         'Hyundai' => [
             'Bus' => ['County'],
-            'Minibus' => ['Starex'],
+            'Minibus' => ['Starex SVX', 'Starex GRX', 'Grand Starex'],
         ],
         'Nissan' => [
             'Bus' => ['Urvan'],
