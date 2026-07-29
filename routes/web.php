@@ -5,6 +5,7 @@ use App\Http\Controllers\Configuration\SimulationSettingController;
 use App\Http\Controllers\Configuration\VehicleModelController;
 use App\Http\Controllers\Configuration\VehicleTypeController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleRentalConditionController;
 use App\Support\Roles;
@@ -16,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
 
     Route::resource('quotes', QuoteController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('simulations', SimulationController::class)->only(['index', 'create', 'store', 'show']);
     Route::resource('vehicles', VehicleController::class)->except(['show']);
 
     Route::get('vehicles/{vehicle}/conditions', [VehicleRentalConditionController::class, 'edit'])
