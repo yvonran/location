@@ -168,6 +168,37 @@ class ReferenceControllersTest extends TestCase
         ]);
     }
 
+    public function test_a_model_can_be_marked_supported(): void
+    {
+        $brand = Brand::create(['name' => 'Hyundai']);
+        $type = VehicleType::create(['name' => 'Bus', 'position' => 0]);
+
+        $this->actingAs($this->superAdmin())
+            ->from(route('configuration.vehicle-models.index'))
+            ->post(route('configuration.vehicle-models.store'), [
+                'brand_id' => $brand->id,
+                'vehicle_type_id' => $type->id,
+                'name' => 'County',
+                'is_supported' => true,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $model = VehicleModel::firstOrFail();
+        $this->assertTrue((bool) $model->is_supported);
+
+        $this->actingAs($this->superAdmin())
+            ->from(route('configuration.vehicle-models.index'))
+            ->put(route('configuration.vehicle-models.update', $model), [
+                'brand_id' => $brand->id,
+                'vehicle_type_id' => $type->id,
+                'name' => 'County',
+                'is_supported' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse((bool) $model->fresh()->is_supported);
+    }
+
     public function test_a_model_name_is_unique_per_brand_but_may_repeat_across_brands(): void
     {
         $hyundai = Brand::create(['name' => 'Hyundai']);

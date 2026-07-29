@@ -20,6 +20,7 @@ class StoreVehicleModelRequest extends FormRequest
         return [
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'vehicle_type_id' => ['nullable', 'integer', 'exists:vehicle_types,id'],
+            'is_supported' => ['boolean'],
             'name' => [
                 'required', 'string', 'max:255',
                 // Un même nom de modèle peut exister chez deux marques différentes.
@@ -36,6 +37,7 @@ class StoreVehicleModelRequest extends FormRequest
         return [
             'brand_id' => 'marque',
             'vehicle_type_id' => 'type',
+            'is_supported' => 'disponibilité',
             'name' => 'nom du modèle',
         ];
     }
