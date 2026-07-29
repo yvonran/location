@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'brand', 'model', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'status', 'image_path'])]
+#[Fillable(['name', 'brand', 'model', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
 class Vehicle extends Model
 {
     use HasFactory, SoftDeletes;
@@ -24,6 +24,7 @@ class Vehicle extends Model
             'seats' => 'integer',
             'year' => 'integer',
             'has_air_conditioning' => 'boolean',
+            'average_consumption' => 'decimal:2',
             'status' => VehicleStatus::class,
         ];
     }

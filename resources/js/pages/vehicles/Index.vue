@@ -51,6 +51,11 @@ const statusVariants: Record<
     out_of_service: 'destructive',
 };
 
+/** Le cast `decimal:2` renvoie une chaîne du type "8.50". */
+function formatConsumption(value: string): string {
+    return `${Number(value).toLocaleString('fr-FR')} L/100 km`;
+}
+
 const preview = ref<Vehicle | null>(null);
 
 function remove(vehicle: Vehicle) {
@@ -94,6 +99,7 @@ function remove(vehicle: Vehicle) {
                         <th class="p-3">Places</th>
                         <th class="p-3">Année</th>
                         <th class="p-3">Clim.</th>
+                        <th class="p-3">Conso.</th>
                         <th class="p-3">Statut</th>
                         <th class="p-3 text-right">Actions</th>
                     </tr>
@@ -141,6 +147,16 @@ function remove(vehicle: Vehicle) {
                             />
                             <span v-else class="text-muted-foreground">—</span>
                         </td>
+                        <td class="p-3 whitespace-nowrap">
+                            <template v-if="vehicle.average_consumption">
+                                {{
+                                    formatConsumption(
+                                        vehicle.average_consumption,
+                                    )
+                                }}
+                            </template>
+                            <span v-else class="text-muted-foreground">—</span>
+                        </td>
                         <td class="p-3">
                             <Badge :variant="statusVariants[vehicle.status]">
                                 {{ statusLabels[vehicle.status] }}
@@ -170,7 +186,7 @@ function remove(vehicle: Vehicle) {
                     </tr>
                     <tr v-if="vehicles.data.length === 0">
                         <td
-                            colspan="8"
+                            colspan="9"
                             class="p-6 text-center text-muted-foreground"
                         >
                             Aucun véhicule enregistré pour l'instant.

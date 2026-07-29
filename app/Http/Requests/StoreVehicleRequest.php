@@ -27,6 +27,7 @@ class StoreVehicleRequest extends FormRequest
             'registration_number' => ['required', 'string', 'max:255', Rule::unique('vehicles', 'registration_number')->whereNull('deleted_at')],
             'year' => ['required', 'integer', 'min:1950', 'max:'.(date('Y') + 1)],
             'has_air_conditioning' => ['boolean'],
+            'average_consumption' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'status' => ['required', new Enum(VehicleStatus::class)],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ];
@@ -42,6 +43,7 @@ class StoreVehicleRequest extends FormRequest
             'registration_number' => 'immatriculation',
             'year' => 'année',
             'has_air_conditioning' => 'climatisation',
+            'average_consumption' => 'consommation moyenne',
             'status' => 'statut',
             'image' => 'photo',
         ];

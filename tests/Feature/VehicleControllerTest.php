@@ -32,6 +32,7 @@ class VehicleControllerTest extends TestCase
             'registration_number' => '1234 TBA',
             'year' => 2020,
             'has_air_conditioning' => true,
+            'average_consumption' => 8.5,
             'status' => VehicleStatus::Available->value,
         ], $overrides);
     }
@@ -95,6 +96,37 @@ class VehicleControllerTest extends TestCase
 
         $this->assertNotNull($vehicle->image_path);
         Storage::disk('public')->assertExists($vehicle->image_path);
+    }
+
+    public function test_the_average_consumption_is_stored_and_is_optional(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload(['average_consumption' => 12.35]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('12.35', Vehicle::firstOrFail()->average_consumption);
+
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload([
+                'registration_number' => '5678 TBT',
+                'average_consumption' => null,
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(
+            Vehicle::where('registration_number', '5678 TBT')->firstOrFail()->average_consumption,
+        );
+    }
+
+    public function test_the_average_consumption_must_be_a_positive_number(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload(['average_consumption' => -1]))
+            ->assertSessionHasErrors('average_consumption');
+
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload(['average_consumption' => 'beaucoup']))
+            ->assertSessionHasErrors('average_consumption');
     }
 
     public function test_the_registration_number_must_be_unique(): void

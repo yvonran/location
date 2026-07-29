@@ -14,6 +14,8 @@ export type Vehicle = {
     registration_number: string;
     year: number;
     has_air_conditioning: boolean;
+    /** Litres aux 100 km — sérialisé en chaîne par le cast `decimal:2`. */
+    average_consumption: string | null;
     status: VehicleStatus;
     image_path: string | null;
     image_url: string | null;

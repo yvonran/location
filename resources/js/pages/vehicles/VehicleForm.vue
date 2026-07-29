@@ -31,6 +31,9 @@ const form = useForm({
     registration_number: props.vehicle?.registration_number ?? '',
     year: props.vehicle?.year ?? new Date().getFullYear(),
     has_air_conditioning: props.vehicle?.has_air_conditioning ?? true,
+    average_consumption: props.vehicle?.average_consumption
+        ? Number(props.vehicle.average_consumption)
+        : (null as number | null),
     status: props.vehicle?.status ?? 'available',
     image: null as File | null,
     remove_image: false as boolean,
@@ -156,6 +159,28 @@ function submit() {
                         @update:model-value="(v) => (form.seats = Number(v))"
                     />
                     <InputError :message="form.errors.seats" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="average_consumption">
+                        Consommation moyenne
+                        <span class="text-muted-foreground">(L/100 km)</span>
+                    </Label>
+                    <Input
+                        id="average_consumption"
+                        type="number"
+                        min="0"
+                        max="999.99"
+                        step="0.01"
+                        placeholder="Ex : 8.5"
+                        :model-value="form.average_consumption ?? undefined"
+                        @update:model-value="
+                            (v) =>
+                                (form.average_consumption =
+                                    v === '' || v === null ? null : Number(v))
+                        "
+                    />
+                    <InputError :message="form.errors.average_consumption" />
                 </div>
 
                 <div class="grid gap-2">
