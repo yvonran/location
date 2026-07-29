@@ -16,6 +16,7 @@ export type VehicleModel = {
     brand_id: number;
     /** null tant que le superadmin ne l'a pas classé. */
     vehicle_type_id: number | null;
+    is_supported: boolean;
     name: string;
     brand?: Brand;
     vehicle_type?: VehicleType | null;

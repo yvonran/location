@@ -6,6 +6,7 @@ import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -86,12 +87,14 @@ const createForm = useForm({
     brand_id: null as number | null,
     vehicle_type_id: null as number | null,
     name: '',
+    is_supported: true as boolean,
 });
 
 const editForm = useForm({
     brand_id: null as number | null,
     vehicle_type_id: null as number | null,
     name: '',
+    is_supported: true as boolean,
 });
 
 const editing = ref<VehicleModel | null>(null);
@@ -109,6 +112,7 @@ function openEdit(model: VehicleModel) {
     editForm.brand_id = model.brand_id;
     editForm.vehicle_type_id = model.vehicle_type_id;
     editForm.name = model.name;
+    editForm.is_supported = model.is_supported;
 }
 
 function saveEdit() {
@@ -198,6 +202,17 @@ function remove(model: VehicleModel) {
                 <InputError :message="createForm.errors.name" />
             </div>
 
+            <div class="flex items-center gap-3 sm:col-span-4">
+                <Checkbox
+                    id="new_is_supported"
+                    v-model="createForm.is_supported"
+                />
+                <Label for="new_is_supported" class="font-normal">
+                    Disponible dans le formulaire véhicule
+                </Label>
+                <InputError :message="createForm.errors.is_supported" />
+            </div>
+
             <Button
                 type="submit"
                 class="mt-5 self-start"
@@ -259,6 +274,7 @@ function remove(model: VehicleModel) {
                         <th class="p-3">Marque</th>
                         <th class="p-3">Modèle</th>
                         <th class="p-3">Type</th>
+                        <th class="p-3">Disponibilité</th>
                         <th class="p-3 text-right">Actions</th>
                     </tr>
                 </thead>
@@ -281,6 +297,17 @@ function remove(model: VehicleModel) {
                             </Badge>
                             <span v-else class="text-muted-foreground">
                                 Non classé
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <Badge
+                                v-if="model.is_supported"
+                                variant="secondary"
+                            >
+                                Disponible
+                            </Badge>
+                            <span v-else class="text-muted-foreground">
+                                Non disponible
                             </span>
                         </td>
                         <td class="p-3">
@@ -307,7 +334,7 @@ function remove(model: VehicleModel) {
                     </tr>
                     <tr v-if="props.models.data.length === 0">
                         <td
-                            colspan="4"
+                            colspan="5"
                             class="p-6 text-center text-muted-foreground"
                         >
                             Aucun modèle ne correspond.
@@ -410,6 +437,17 @@ function remove(model: VehicleModel) {
                         <Label for="edit_model">Nom</Label>
                         <Input id="edit_model" v-model="editForm.name" />
                         <InputError :message="editForm.errors.name" />
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <Checkbox
+                            id="edit_is_supported"
+                            v-model="editForm.is_supported"
+                        />
+                        <Label for="edit_is_supported" class="font-normal">
+                            Disponible dans le formulaire véhicule
+                        </Label>
+                        <InputError :message="editForm.errors.is_supported" />
                     </div>
 
                     <Button type="submit" :disabled="editForm.processing">
