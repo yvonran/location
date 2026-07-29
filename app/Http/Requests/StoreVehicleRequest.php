@@ -3,21 +3,27 @@
 namespace App\Http\Requests;
 
 use App\Enums\VehicleStatus;
+use App\Http\Requests\Concerns\ValidatesRentalZones;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 class StoreVehicleRequest extends FormRequest
 {
+    use ValidatesRentalZones;
+
     public function authorize(): bool
     {
         return true;
     }
 
     /**
+     * Champs de la fiche véhicule, communs à la création et à la modification.
+     *
      * @return array<string, mixed>
      */
-    public function rules(): array
+    protected function vehicleRules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -33,6 +39,31 @@ class StoreVehicleRequest extends FormRequest
         ];
     }
 
+    /**
+     * Le véhicule n'existant pas encore, ses conditions de location sont
+     * enregistrées dans la même requête que sa fiche.
+     *
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [...$this->vehicleRules(), ...$this->rentalZoneRules()];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            fn (Validator $validator) => $this->validateZoneBounds($validator),
+            fn (Validator $validator) => $this->rejectOverlappingDayRanges($validator),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
     public function attributes(): array
     {
         return [
@@ -46,6 +77,7 @@ class StoreVehicleRequest extends FormRequest
             'average_consumption' => 'consommation moyenne',
             'status' => 'statut',
             'image' => 'photo',
+            ...$this->rentalZoneAttributes(),
         ];
     }
 }

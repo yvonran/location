@@ -34,6 +34,19 @@ class VehicleControllerTest extends TestCase
             'has_air_conditioning' => true,
             'average_consumption' => 8.5,
             'status' => VehicleStatus::Available->value,
+            // Exigées à la création : le véhicule et ses zones partent ensemble.
+            'zones' => [
+                [
+                    'name' => 'Ville',
+                    'max_km' => 50,
+                    'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 180000]],
+                ],
+                [
+                    'name' => 'Reste',
+                    'max_km' => null,
+                    'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 350000]],
+                ],
+            ],
         ], $overrides);
     }
 
@@ -80,6 +93,118 @@ class VehicleControllerTest extends TestCase
             'registration_number' => '1234 TBA',
             'image_path' => null,
         ]);
+    }
+
+    public function test_the_create_page_offers_the_default_zones(): void
+    {
+        $this->actingAs($this->user())
+            ->get(route('vehicles.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('vehicles/Create')
+                ->has('zones', 4)
+                ->where('zones.0.name', 'Ville')
+                ->where('zones.0.max_km', 50)
+                ->where('zones.3.max_km', null));
+    }
+
+    public function test_the_rental_conditions_are_saved_along_with_the_new_vehicle(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload())
+            ->assertRedirect(route('vehicles.index'));
+
+        $condition = Vehicle::firstOrFail()->rentalCondition;
+        $zones = $condition->rentalZones()->orderBy('position')->get();
+
+        $this->assertCount(2, $zones);
+        $this->assertSame(['Ville', 'Reste'], $zones->pluck('name')->all());
+        $this->assertSame(50, $zones[0]->max_km);
+        $this->assertNull($zones[1]->max_km);
+        $this->assertSame('180000.00', $zones[0]->rentalRates->first()->daily_rate);
+    }
+
+    public function test_a_vehicle_can_be_created_with_custom_zones(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload([
+                'zones' => [
+                    ['name' => 'Intra-muros', 'max_km' => 15, 'rates' => []],
+                    ['name' => 'Grand Tana', 'max_km' => 60, 'rates' => []],
+                    ['name' => 'Ailleurs', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 400000]]],
+                ],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['Intra-muros', 'Grand Tana', 'Ailleurs'],
+            Vehicle::firstOrFail()->rentalCondition->rentalZones()->orderBy('position')->pluck('name')->all(),
+        );
+    }
+
+    public function test_invalid_zones_block_the_vehicle_creation_entirely(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload([
+                'zones' => [
+                    ['name' => 'A', 'max_km' => 100, 'rates' => []],
+                    ['name' => 'B', 'max_km' => 60, 'rates' => []],
+                    ['name' => 'C', 'max_km' => null, 'rates' => []],
+                ],
+            ]))
+            ->assertSessionHasErrors('zones.1.max_km');
+
+        $this->assertDatabaseCount('vehicles', 0);
+        $this->assertDatabaseCount('rental_conditions', 0);
+    }
+
+    public function test_at_least_one_zone_is_required_to_create_a_vehicle(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload(['zones' => []]))
+            ->assertSessionHasErrors('zones');
+
+        $this->assertDatabaseCount('vehicles', 0);
+    }
+
+    public function test_zones_survive_the_multipart_upload_the_form_actually_uses(): void
+    {
+        Storage::fake('public');
+
+        // En multipart, tout arrive en chaîne et les null deviennent des vides.
+        $this->actingAs($this->user())
+            ->post(route('vehicles.store'), $this->payload([
+                'image' => UploadedFile::fake()->image('starex.jpg'),
+                'zones' => [
+                    ['name' => 'Ville', 'max_km' => '50', 'rates' => [['min_days' => '1', 'max_days' => '5', 'daily_rate' => '180000']]],
+                    ['name' => 'Reste', 'max_km' => '', 'rates' => [['min_days' => '1', 'max_days' => '', 'daily_rate' => '350000']]],
+                ],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $zones = Vehicle::firstOrFail()->rentalCondition->rentalZones()->orderBy('position')->get();
+
+        $this->assertSame(50, $zones[0]->max_km);
+        $this->assertNull($zones[1]->max_km);
+        $this->assertNull($zones[1]->rentalRates->first()->max_days);
+        $this->assertSame('350000.00', $zones[1]->rentalRates->first()->daily_rate);
+    }
+
+    public function test_updating_a_vehicle_leaves_its_zones_untouched(): void
+    {
+        $this->actingAs($this->user())->post(route('vehicles.store'), $this->payload());
+
+        $vehicle = Vehicle::firstOrFail();
+
+        $this->actingAs($this->user())
+            ->put(route('vehicles.update', $vehicle), $this->payload([
+                'name' => 'Renommé',
+                'zones' => [],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Renommé', $vehicle->fresh()->name);
+        $this->assertCount(2, $vehicle->fresh()->rentalCondition->rentalZones);
     }
 
     public function test_a_vehicle_can_be_created_with_an_image(): void

@@ -12,3 +12,16 @@ export type RentalZone = {
     max_km: number | null;
     rates: RentalRate[];
 };
+
+/** Formes éditables : le montant reste nul tant que rien n'a été saisi. */
+export type RentalRateInput = {
+    min_days: number;
+    max_days: number | null;
+    daily_rate: number | null;
+};
+
+export type RentalZoneInput = {
+    name: string;
+    max_km: number | null;
+    rates: RentalRateInput[];
+};

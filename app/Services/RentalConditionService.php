@@ -6,6 +6,7 @@ use App\Models\RentalCondition;
 use App\Models\RentalRate;
 use App\Models\RentalZone;
 use App\Models\Vehicle;
+use Illuminate\Support\Facades\DB;
 
 class RentalConditionService
 {
@@ -16,9 +17,9 @@ class RentalConditionService
      *
      * @return array{zones: array<int, array{name: string, max_km: int|null, rates: array<int, array{min_days: int, max_days: int|null, daily_rate: string}>}>}
      */
-    public function editorProps(Vehicle $vehicle): array
+    public function editorProps(?Vehicle $vehicle = null): array
     {
-        $condition = $vehicle->rentalCondition;
+        $condition = $vehicle?->rentalCondition;
 
         if (! $condition instanceof RentalCondition) {
             return ['zones' => $this->defaultZones()];
@@ -42,6 +43,37 @@ class RentalConditionService
             ->all();
 
         return ['zones' => $zones === [] ? $this->defaultZones() : $zones];
+    }
+
+    /**
+     * Remplace d'un bloc le découpage du véhicule par celui soumis. L'ordre du
+     * tableau fait foi : il fixe la position, donc l'enchaînement des bornes.
+     *
+     * @param  array<int, array{name: string, max_km?: int|null, rates?: array<int, array{min_days: int, max_days?: int|null, daily_rate: numeric-string|float|int}>}>  $zones
+     */
+    public function replaceZones(Vehicle $vehicle, array $zones): void
+    {
+        DB::transaction(function () use ($vehicle, $zones) {
+            $condition = $vehicle->rentalCondition()->firstOrCreate([]);
+
+            $condition->rentalZones()->delete();
+
+            foreach (array_values($zones) as $position => $zoneInput) {
+                $zone = $condition->rentalZones()->create([
+                    'name' => $zoneInput['name'],
+                    'max_km' => $zoneInput['max_km'] ?? null,
+                    'position' => $position,
+                ]);
+
+                foreach ($zoneInput['rates'] ?? [] as $rate) {
+                    $zone->rentalRates()->create([
+                        'min_days' => $rate['min_days'],
+                        'max_days' => $rate['max_days'] ?? null,
+                        'daily_rate' => $rate['daily_rate'],
+                    ]);
+                }
+            }
+        });
     }
 
     /**

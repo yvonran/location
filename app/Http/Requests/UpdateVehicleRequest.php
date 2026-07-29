@@ -7,11 +7,15 @@ use Illuminate\Validation\Rule;
 class UpdateVehicleRequest extends StoreVehicleRequest
 {
     /**
+     * Les conditions de location ont leur propre formulaire une fois le
+     * véhicule créé : la fiche seule est soumise ici.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
-        return array_merge(parent::rules(), [
+        return [
+            ...$this->vehicleRules(),
             'registration_number' => [
                 'required', 'string', 'max:255',
                 Rule::unique('vehicles', 'registration_number')
@@ -19,6 +23,14 @@ class UpdateVehicleRequest extends StoreVehicleRequest
                     ->whereNull('deleted_at'),
             ],
             'remove_image' => ['boolean'],
-        ]);
+        ];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [];
     }
 }

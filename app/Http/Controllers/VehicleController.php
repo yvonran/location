@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateVehicleRequest;
 use App\Models\Vehicle;
 use App\Services\RentalConditionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,22 +22,28 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(RentalConditionService $rentalConditionService): Response
     {
         return Inertia::render('vehicles/Create', [
             'statuses' => $this->statuses(),
+            ...$rentalConditionService->editorProps(),
         ]);
     }
 
-    public function store(StoreVehicleRequest $request): RedirectResponse
+    public function store(StoreVehicleRequest $request, RentalConditionService $rentalConditionService): RedirectResponse
     {
-        $attributes = $request->safe()->except('image');
+        $attributes = $request->safe()->except(['image', 'zones']);
 
         if ($request->hasFile('image')) {
             $attributes['image_path'] = $request->file('image')->store('vehicles', 'public');
         }
 
-        Vehicle::create($attributes);
+        // La fiche et ses zones forment un tout : ni l'une ni les autres seules.
+        DB::transaction(function () use ($attributes, $request, $rentalConditionService) {
+            $vehicle = Vehicle::create($attributes);
+
+            $rentalConditionService->replaceZones($vehicle, $request->validated('zones', []));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Véhicule ajouté.']);
 

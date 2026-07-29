@@ -14,13 +14,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { toZoneInputs } from '@/lib/rentalZones';
+import RentalZonesEditor from '@/pages/vehicles/RentalZonesEditor.vue';
 import { store, update } from '@/routes/vehicles';
+import type { RentalZone } from '@/types/rental';
 import type { Vehicle, VehicleStatusOption } from '@/types/vehicle';
 
 const props = defineProps<{
     vehicle?: Vehicle;
     statuses: VehicleStatusOption[];
     submitLabel: string;
+    /**
+     * Présent à la création seulement : le véhicule n'existe pas encore, ses
+     * conditions de location partent donc dans la même requête que sa fiche.
+     * À la modification, elles ont leur propre formulaire.
+     */
+    zones?: RentalZone[];
 }>();
 
 const form = useForm({
@@ -37,7 +47,10 @@ const form = useForm({
     status: props.vehicle?.status ?? 'available',
     image: null as File | null,
     remove_image: false as boolean,
+    zones: toZoneInputs(props.zones ?? []),
 });
+
+const editsZones = computed(() => props.zones !== undefined);
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedPreview = ref<string | null>(null);
@@ -80,10 +93,16 @@ function clearImage() {
 function submit() {
     if (props.vehicle) {
         // Inertia needs a POST + method spoofing to send multipart data on update.
-        form.transform((data) => ({ ...data, _method: 'put' })).post(
-            update(props.vehicle.id).url,
-            { forceFormData: true },
-        );
+        // Les zones ne font pas partie de cette requête : elles ont leur formulaire.
+        form.transform((data) => {
+            const payload: Record<string, unknown> = {
+                ...data,
+                _method: 'put',
+            };
+            delete payload.zones;
+
+            return payload;
+        }).post(update(props.vehicle.id).url, { forceFormData: true });
 
         return;
     }
@@ -263,6 +282,27 @@ function submit() {
                 </p>
             </div>
         </div>
+
+        <template v-if="editsZones">
+            <Separator />
+
+            <section class="space-y-6">
+                <div>
+                    <h2 class="text-base font-medium">
+                        Conditions de location
+                    </h2>
+                    <p class="text-sm text-muted-foreground">
+                        Zones de distance et tarifs journaliers, enregistrés en
+                        même temps que la fiche. Tout reste modifiable ensuite.
+                    </p>
+                </div>
+
+                <RentalZonesEditor
+                    v-model="form.zones"
+                    :errors="form.errors as Record<string, string>"
+                />
+            </section>
+        </template>
 
         <Button type="submit" :disabled="form.processing">{{
             props.submitLabel
