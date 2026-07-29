@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\VehicleStatus;
+use App\Models\Brand;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
+use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -81,6 +83,40 @@ class VehicleControllerTest extends TestCase
         $this->actingAs($this->user())
             ->get(route('vehicles.index', ['page' => 2]))
             ->assertInertia(fn ($page) => $page->has('vehicles.data', 2));
+    }
+
+    public function test_the_create_page_only_lists_supported_typed_models(): void
+    {
+        $type = VehicleType::create(['name' => 'Bus', 'position' => 0]);
+        $brand = Brand::create(['name' => 'Hyundai']);
+
+        $supported = VehicleModel::create([
+            'brand_id' => $brand->id, 'vehicle_type_id' => $type->id, 'name' => 'County', 'is_supported' => true,
+        ]);
+        VehicleModel::create([
+            'brand_id' => $brand->id, 'vehicle_type_id' => $type->id, 'name' => 'Starex', 'is_supported' => false,
+        ]);
+        VehicleModel::create([
+            'brand_id' => $brand->id, 'vehicle_type_id' => null, 'name' => 'Importé', 'is_supported' => true,
+        ]);
+
+        $this->actingAs($this->user())
+            ->get(route('vehicles.create'))
+            ->assertInertia(fn ($page) => $page
+                ->has('vehicleModels', 1)
+                ->where('vehicleModels.0.id', $supported->id));
+    }
+
+    public function test_the_edit_page_still_includes_the_vehicles_own_excluded_model(): void
+    {
+        $model = VehicleModel::factory()->create(['vehicle_type_id' => null, 'is_supported' => false]);
+        $vehicle = Vehicle::factory()->create(['vehicle_model_id' => $model->id]);
+
+        $this->actingAs($this->user())
+            ->get(route('vehicles.edit', $vehicle))
+            ->assertInertia(fn ($page) => $page
+                ->has('vehicleModels', 1)
+                ->where('vehicleModels.0.id', $model->id));
     }
 
     public function test_a_vehicle_can_be_created_without_an_image(): void

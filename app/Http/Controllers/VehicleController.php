@@ -55,10 +55,12 @@ class VehicleController extends Controller
 
     public function edit(Vehicle $vehicle, RentalConditionService $rentalConditionService): Response
     {
+        $vehicle->loadMissing('vehicleModel.brand', 'vehicleModel.vehicleType');
+
         return Inertia::render('vehicles/Edit', [
-            'vehicle' => $vehicle->loadMissing('vehicleModel.brand', 'vehicleModel.vehicleType'),
+            'vehicle' => $vehicle,
             'statuses' => $this->statuses(),
-            ...$this->referenceData(),
+            ...$this->referenceData($vehicle->vehicleModel),
             ...$rentalConditionService->editorProps($vehicle),
         ]);
     }
@@ -93,17 +95,25 @@ class VehicleController extends Controller
 
     /**
      * Référentiel servant les listes déroulantes : le type filtre les modèles,
-     * et le modèle porte sa marque.
+     * et le modèle porte sa marque. Seuls les modèles classés et disponibles
+     * apparaissent, sauf le modèle déjà choisi par le véhicule en édition.
      *
      * @return array{vehicleModels: mixed, vehicleTypes: mixed}
      */
-    private function referenceData(): array
+    private function referenceData(?VehicleModel $currentModel = null): array
     {
         return [
             'vehicleModels' => VehicleModel::query()
                 ->with('brand:id,name')
+                ->where(function ($query) use ($currentModel) {
+                    $query->whereNotNull('vehicle_type_id')->where('is_supported', true);
+
+                    if ($currentModel) {
+                        $query->orWhere('id', $currentModel->id);
+                    }
+                })
                 ->orderBy('name')
-                ->get(['id', 'brand_id', 'vehicle_type_id', 'name']),
+                ->get(['id', 'brand_id', 'vehicle_type_id', 'name', 'is_supported']),
             'vehicleTypes' => VehicleType::orderBy('position')->orderBy('name')->get(['id', 'name']),
         ];
     }
