@@ -49,7 +49,7 @@ class QuoteLinesTableTest extends TestCase
         $this->assertTrue(Schema::hasTable('quote_lines'));
         $this->assertTrue(Schema::hasColumns('quote_lines', [
             'id', 'quote_id', 'vehicle_id', 'route_id', 'service_type_id',
-            'start_date', 'number_of_days', 'distance_km', 'daily_rate',
+            'start_date', 'departure_time', 'number_of_days', 'distance_km', 'daily_rate',
             'service_coefficient', 'discount_type', 'discount_value',
             'discount_amount', 'options_amount', 'line_total', 'position',
             'created_at', 'updated_at',

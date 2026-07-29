@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['vehicle_id', 'min_distance_km', 'max_distance_km', 'min_days', 'max_days', 'daily_rate'])]
+#[Fillable(['vehicle_id', 'min_distance_km', 'max_distance_km', 'min_days', 'max_days', 'daily_rate', 'meal_included', 'meal_price'])]
 class Tariff extends Model
 {
     use HasFactory;
@@ -20,6 +20,8 @@ class Tariff extends Model
             'min_days' => 'integer',
             'max_days' => 'integer',
             'daily_rate' => 'decimal:2',
+            'meal_included' => 'boolean',
+            'meal_price' => 'decimal:2',
         ];
     }
 

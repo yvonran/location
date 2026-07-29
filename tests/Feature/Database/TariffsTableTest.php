@@ -17,7 +17,8 @@ class TariffsTableTest extends TestCase
         $this->assertTrue(Schema::hasTable('tariffs'));
         $this->assertTrue(Schema::hasColumns('tariffs', [
             'id', 'vehicle_id', 'min_distance_km', 'max_distance_km',
-            'min_days', 'max_days', 'daily_rate', 'created_at', 'updated_at',
+            'min_days', 'max_days', 'daily_rate', 'meal_included', 'meal_price',
+            'created_at', 'updated_at',
         ]));
     }
 

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'quote_id', 'vehicle_id', 'route_id', 'service_type_id', 'start_date',
+    'quote_id', 'vehicle_id', 'route_id', 'service_type_id', 'start_date', 'departure_time',
     'number_of_days', 'distance_km', 'daily_rate', 'service_coefficient',
     'discount_type', 'discount_value', 'discount_amount', 'options_amount',
     'line_total', 'position',

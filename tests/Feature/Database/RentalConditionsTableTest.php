@@ -27,8 +27,30 @@ class RentalConditionsTableTest extends TestCase
 
         $this->assertTrue(Schema::hasTable('rental_rates'));
         $this->assertTrue(Schema::hasColumns('rental_rates', [
-            'id', 'rental_zone_id', 'min_days', 'max_days', 'daily_rate', 'created_at', 'updated_at',
+            'id', 'rental_zone_id', 'min_days', 'max_days', 'daily_rate',
+            'meal_included', 'meal_price', 'created_at', 'updated_at',
         ]));
+    }
+
+    public function test_a_rate_defaults_to_meal_not_included(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $conditionId = DB::table('rental_conditions')->insertGetId([
+            'vehicle_id' => $vehicle->id, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $zoneId = DB::table('rental_zones')->insertGetId([
+            'rental_condition_id' => $conditionId, 'name' => 'Ville', 'max_km' => 50,
+            'position' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $rateId = DB::table('rental_rates')->insertGetId([
+            'rental_zone_id' => $zoneId, 'min_days' => 1, 'max_days' => null,
+            'daily_rate' => 180000, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->assertDatabaseHas('rental_rates', ['id' => $rateId, 'meal_included' => false, 'meal_price' => null]);
     }
 
     public function test_the_fixed_zone_columns_are_gone(): void
