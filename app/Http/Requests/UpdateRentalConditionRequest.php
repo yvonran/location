@@ -2,10 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\RentalZone;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
 
 class UpdateRentalConditionRequest extends FormRequest
 {
@@ -20,14 +18,13 @@ class UpdateRentalConditionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'city_max_km' => ['required', 'integer', 'min:1'],
-            'suburb_max_km' => ['required', 'integer', 'gt:city_max_km'],
-            'long_distance_max_km' => ['required', 'integer', 'gt:suburb_max_km'],
-            'rates' => ['array'],
-            'rates.*.zone' => ['required', new Enum(RentalZone::class)],
-            'rates.*.min_days' => ['required', 'integer', 'min:1'],
-            'rates.*.max_days' => ['nullable', 'integer', 'gte:rates.*.min_days'],
-            'rates.*.daily_rate' => ['required', 'numeric', 'min:0'],
+            'zones' => ['required', 'array', 'min:1'],
+            'zones.*.name' => ['required', 'string', 'max:255'],
+            'zones.*.max_km' => ['nullable', 'integer', 'min:1'],
+            'zones.*.rates' => ['array'],
+            'zones.*.rates.*.min_days' => ['required', 'integer', 'min:1'],
+            'zones.*.rates.*.max_days' => ['nullable', 'integer', 'gte:zones.*.rates.*.min_days'],
+            'zones.*.rates.*.daily_rate' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -37,8 +34,54 @@ class UpdateRentalConditionRequest extends FormRequest
     public function after(): array
     {
         return [
+            fn (Validator $validator) => $this->validateZoneBounds($validator),
             fn (Validator $validator) => $this->rejectOverlappingDayRanges($validator),
         ];
+    }
+
+    /**
+     * Les bornes doivent croître, et seule la dernière zone peut rester ouverte :
+     * sans cela une distance pourrait relever de deux zones, ou d'aucune.
+     */
+    private function validateZoneBounds(Validator $validator): void
+    {
+        $zones = array_values((array) $this->input('zones', []));
+        $lastIndex = count($zones) - 1;
+        $previousMax = 0;
+
+        foreach ($zones as $index => $zone) {
+            $maxKm = $zone['max_km'] ?? null;
+            $isLast = $index === $lastIndex;
+
+            if ($isLast) {
+                if ($maxKm !== null && $maxKm !== '') {
+                    $validator->errors()->add(
+                        "zones.{$index}.max_km",
+                        'La dernière zone doit rester sans limite pour couvrir les plus longs trajets.',
+                    );
+                }
+
+                continue;
+            }
+
+            if ($maxKm === null || $maxKm === '') {
+                $validator->errors()->add(
+                    "zones.{$index}.max_km",
+                    'Seule la dernière zone peut être sans limite.',
+                );
+
+                continue;
+            }
+
+            if ((int) $maxKm <= $previousMax) {
+                $validator->errors()->add(
+                    "zones.{$index}.max_km",
+                    "Cette borne doit dépasser celle de la zone précédente ({$previousMax} km).",
+                );
+            }
+
+            $previousMax = (int) $maxKm;
+        }
     }
 
     /**
@@ -47,28 +90,28 @@ class UpdateRentalConditionRequest extends FormRequest
      */
     private function rejectOverlappingDayRanges(Validator $validator): void
     {
-        $rangesByZone = [];
+        foreach ((array) $this->input('zones', []) as $zoneIndex => $zone) {
+            $ranges = [];
 
-        foreach ((array) $this->input('rates', []) as $index => $rate) {
-            if (! isset($rate['zone'], $rate['min_days'])) {
-                continue;
+            foreach ((array) ($zone['rates'] ?? []) as $rateIndex => $rate) {
+                if (! isset($rate['min_days'])) {
+                    continue;
+                }
+
+                $maxDays = $rate['max_days'] ?? null;
+
+                $ranges[] = [
+                    'index' => $rateIndex,
+                    'min' => (int) $rate['min_days'],
+                    'max' => ($maxDays === null || $maxDays === '') ? PHP_INT_MAX : (int) $maxDays,
+                ];
             }
 
-            $maxDays = $rate['max_days'] ?? null;
-
-            $rangesByZone[$rate['zone']][] = [
-                'index' => $index,
-                'min' => (int) $rate['min_days'],
-                'max' => ($maxDays === null || $maxDays === '') ? PHP_INT_MAX : (int) $maxDays,
-            ];
-        }
-
-        foreach ($rangesByZone as $ranges) {
             foreach ($ranges as $position => $range) {
                 foreach (array_slice($ranges, $position + 1) as $other) {
                     if ($range['min'] <= $other['max'] && $other['min'] <= $range['max']) {
                         $validator->errors()->add(
-                            "rates.{$other['index']}.min_days",
+                            "zones.{$zoneIndex}.rates.{$other['index']}.min_days",
                             'Cette tranche de durée en chevauche une autre dans la même zone.',
                         );
                     }
@@ -83,9 +126,8 @@ class UpdateRentalConditionRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'city_max_km' => 'limite ville',
-            'suburb_max_km' => 'limite périphérie',
-            'long_distance_max_km' => 'limite longue distance',
+            'zones.*.name' => 'nom de la zone',
+            'zones.*.max_km' => 'borne de la zone',
         ];
     }
 }

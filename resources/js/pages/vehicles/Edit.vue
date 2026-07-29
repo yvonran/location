@@ -6,19 +6,13 @@ import RentalConditionForm from '@/pages/vehicles/RentalConditionForm.vue';
 import VehicleForm from '@/pages/vehicles/VehicleForm.vue';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/vehicles';
-import type {
-    RentalConditionThresholds,
-    RentalRate,
-    RentalZoneOption,
-} from '@/types/rental';
+import type { RentalZone } from '@/types/rental';
 import type { Vehicle, VehicleStatusOption } from '@/types/vehicle';
 
 defineProps<{
     vehicle: Vehicle;
     statuses: VehicleStatusOption[];
-    condition: RentalConditionThresholds;
-    rates: RentalRate[];
-    zones: RentalZoneOption[];
+    zones: RentalZone[];
 }>();
 
 defineOptions({
@@ -53,17 +47,12 @@ defineOptions({
             <div>
                 <h2 class="text-base font-medium">Conditions de location</h2>
                 <p class="text-sm text-muted-foreground">
-                    Tarifs journaliers par zone de distance. Cette section
-                    s'enregistre séparément de la fiche du véhicule.
+                    Zones de distance et tarifs journaliers, propres à ce
+                    véhicule. Cette section s'enregistre séparément de la fiche.
                 </p>
             </div>
 
-            <RentalConditionForm
-                :vehicle-id="vehicle.id"
-                :condition="condition"
-                :rates="rates"
-                :zones="zones"
-            />
+            <RentalConditionForm :vehicle-id="vehicle.id" :zones="zones" />
         </section>
     </div>
 </template>

@@ -2,67 +2,38 @@
 
 namespace App\Models;
 
-use App\Enums\RentalZone;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['vehicle_id', 'city_max_km', 'suburb_max_km', 'long_distance_max_km'])]
+#[Fillable(['vehicle_id'])]
 class RentalCondition extends Model
 {
     use HasFactory;
 
-    public const DEFAULT_CITY_MAX_KM = 50;
-
-    public const DEFAULT_SUBURB_MAX_KM = 100;
-
-    public const DEFAULT_LONG_DISTANCE_MAX_KM = 700;
-
     /**
-     * Les valeurs par défaut des colonnes ne s'appliquent qu'à l'insertion :
-     * on les répète ici pour qu'une instance non enregistrée les porte déjà.
+     * Découpage proposé à la création : l'utilisateur le renomme, le complète
+     * ou le réduit à sa guise. Chaque entrée est [nom, borne haute du trajet aller].
      */
-    protected $attributes = [
-        'city_max_km' => self::DEFAULT_CITY_MAX_KM,
-        'suburb_max_km' => self::DEFAULT_SUBURB_MAX_KM,
-        'long_distance_max_km' => self::DEFAULT_LONG_DISTANCE_MAX_KM,
+    public const DEFAULT_ZONES = [
+        ['Ville', 50],
+        ['Périphérie', 100],
+        ['Longue distance', 700],
+        ['Très longue distance', null],
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'city_max_km' => 'integer',
-            'suburb_max_km' => 'integer',
-            'long_distance_max_km' => 'integer',
-        ];
-    }
-
     /**
-     * Zone correspondant à la distance du trajet aller, en km.
+     * Zone couvrant la distance du trajet aller, ou null si aucune ne convient
+     * (cas d'un découpage sans zone ouverte laissant un trou au-delà du dernier seuil).
      */
-    public function zoneFor(float $oneWayKm): RentalZone
+    public function zoneFor(float $oneWayKm): ?RentalZone
     {
-        return match (true) {
-            $oneWayKm <= $this->city_max_km => RentalZone::City,
-            $oneWayKm <= $this->suburb_max_km => RentalZone::Suburb,
-            $oneWayKm <= $this->long_distance_max_km => RentalZone::LongDistance,
-            default => RentalZone::VeryLongDistance,
-        };
-    }
-
-    /**
-     * Borne haute du trajet aller pour une zone, ou null pour la zone ouverte.
-     */
-    public function maxKmFor(RentalZone $zone): ?int
-    {
-        return match ($zone) {
-            RentalZone::City => $this->city_max_km,
-            RentalZone::Suburb => $this->suburb_max_km,
-            RentalZone::LongDistance => $this->long_distance_max_km,
-            RentalZone::VeryLongDistance => null,
-        };
+        return $this->rentalZones()
+            ->orderBy('position')
+            ->get()
+            ->first(fn (RentalZone $zone) => $zone->covers($oneWayKm));
     }
 
     /**
@@ -74,10 +45,10 @@ class RentalCondition extends Model
     }
 
     /**
-     * @return HasMany<RentalRate, $this>
+     * @return HasMany<RentalZone, $this>
      */
-    public function rentalRates(): HasMany
+    public function rentalZones(): HasMany
     {
-        return $this->hasMany(RentalRate::class);
+        return $this->hasMany(RentalZone::class);
     }
 }

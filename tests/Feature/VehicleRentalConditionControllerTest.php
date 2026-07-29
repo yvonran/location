@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\RentalZone;
 use App\Models\RentalCondition;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -24,14 +23,31 @@ class VehicleRentalConditionControllerTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return array_merge([
-            'city_max_km' => 50,
-            'suburb_max_km' => 100,
-            'long_distance_max_km' => 700,
-            'rates' => [
-                ['zone' => 'city', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
-                ['zone' => 'city', 'min_days' => 6, 'max_days' => null, 'daily_rate' => 160000],
+            'zones' => [
+                [
+                    'name' => 'Ville',
+                    'max_km' => 50,
+                    'rates' => [
+                        ['min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
+                        ['min_days' => 6, 'max_days' => null, 'daily_rate' => 160000],
+                    ],
+                ],
+                [
+                    'name' => 'Reste',
+                    'max_km' => null,
+                    'rates' => [
+                        ['min_days' => 1, 'max_days' => null, 'daily_rate' => 350000],
+                    ],
+                ],
             ],
         ], $overrides);
+    }
+
+    private function save(Vehicle $vehicle, array $payload)
+    {
+        return $this->actingAs($this->user())
+            ->from(route('vehicles.conditions.edit', $vehicle))
+            ->put(route('vehicles.conditions.update', $vehicle), $payload);
     }
 
     public function test_guests_are_redirected_to_login(): void
@@ -41,7 +57,7 @@ class VehicleRentalConditionControllerTest extends TestCase
         $this->get(route('vehicles.conditions.edit', $vehicle))->assertRedirect(route('login'));
     }
 
-    public function test_the_form_opens_with_the_default_thresholds_for_a_vehicle_without_conditions(): void
+    public function test_the_form_opens_with_the_default_zones_for_a_vehicle_without_conditions(): void
     {
         $vehicle = Vehicle::factory()->create();
 
@@ -50,32 +66,24 @@ class VehicleRentalConditionControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('vehicles/RentalCondition')
-                ->where('condition.city_max_km', 50)
-                ->where('condition.suburb_max_km', 100)
-                ->where('condition.long_distance_max_km', 700)
-                ->has('rates', 0)
-                ->has('zones', 4));
+                ->has('zones', 4)
+                ->where('zones.0.name', 'Ville')
+                ->where('zones.0.max_km', 50)
+                ->where('zones.3.max_km', null));
     }
 
-    public function test_the_vehicle_edit_page_carries_the_same_conditions_props(): void
+    public function test_the_vehicle_edit_page_carries_the_same_zones(): void
     {
         $vehicle = Vehicle::factory()->create();
-        $condition = RentalCondition::create([
-            'vehicle_id' => $vehicle->id,
-            'city_max_km' => 35,
-        ]);
-        $condition->rentalRates()->create([
-            'zone' => RentalZone::City, 'min_days' => 1, 'max_days' => null, 'daily_rate' => 180000,
-        ]);
+        $this->save($vehicle, $this->payload());
 
         $this->actingAs($this->user())
             ->get(route('vehicles.edit', $vehicle))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('vehicles/Edit')
-                ->where('condition.city_max_km', 35)
-                ->has('rates', 1)
-                ->has('zones', 4));
+                ->has('zones', 2)
+                ->where('zones.0.name', 'Ville'));
     }
 
     public function test_saving_conditions_from_the_vehicle_edit_page_returns_there(): void
@@ -86,180 +94,201 @@ class VehicleRentalConditionControllerTest extends TestCase
             ->from(route('vehicles.edit', $vehicle))
             ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
             ->assertRedirect(route('vehicles.edit', $vehicle));
-
-        $this->assertDatabaseCount('rental_rates', 2);
     }
 
-    public function test_conditions_and_rates_are_created_on_first_save(): void
+    public function test_zones_and_rates_are_created_on_first_save(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
+        $this->save($vehicle, $this->payload())
             ->assertRedirect(route('vehicles.conditions.edit', $vehicle));
 
         $condition = $vehicle->fresh()->rentalCondition;
+        $zones = $condition->rentalZones()->orderBy('position')->get();
 
-        $this->assertNotNull($condition);
-        $this->assertSame(50, $condition->city_max_km);
-        $this->assertCount(2, $condition->rentalRates);
-        $this->assertDatabaseHas('rental_rates', [
-            'rental_condition_id' => $condition->id,
-            'zone' => 'city',
-            'min_days' => 6,
-            'max_days' => null,
-            'daily_rate' => 160000,
-        ]);
+        $this->assertCount(2, $zones);
+        $this->assertSame('Ville', $zones[0]->name);
+        $this->assertSame(50, $zones[0]->max_km);
+        $this->assertSame(0, $zones[0]->position);
+        $this->assertNull($zones[1]->max_km);
+        $this->assertSame(1, $zones[1]->position);
+        $this->assertCount(2, $zones[0]->rentalRates);
+        $this->assertCount(1, $zones[1]->rentalRates);
     }
 
-    public function test_saving_replaces_the_previous_grid_instead_of_appending(): void
+    public function test_a_user_can_define_any_number_of_zones_with_their_own_names(): void
     {
         $vehicle = Vehicle::factory()->create();
-        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
-        $condition->rentalRates()->create([
-            'zone' => RentalZone::VeryLongDistance,
-            'min_days' => 1, 'max_days' => null, 'daily_rate' => 999000,
-        ]);
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload())
-            ->assertSessionHasNoErrors();
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'Intra-muros', 'max_km' => 15, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 120000]]],
+                ['name' => 'Grand Tana', 'max_km' => 60, 'rates' => []],
+                ['name' => 'Région', 'max_km' => 250, 'rates' => []],
+                ['name' => 'Province', 'max_km' => 900, 'rates' => []],
+                ['name' => 'Grand Sud', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 500000]]],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['Intra-muros', 'Grand Tana', 'Région', 'Province', 'Grand Sud'],
+            $vehicle->fresh()->rentalCondition->rentalZones()->orderBy('position')->pluck('name')->all(),
+        );
+    }
+
+    public function test_a_single_open_zone_is_enough(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'Tarif unique', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 200000]]],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('rental_zones', 1);
+        $this->assertDatabaseCount('rental_rates', 1);
+    }
+
+    public function test_saving_replaces_the_previous_zones_instead_of_appending(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+        $this->save($vehicle, $this->payload())->assertSessionHasNoErrors();
+
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'Unique', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => 999000]]],
+            ],
+        ])->assertSessionHasNoErrors();
 
         $this->assertSame(1, RentalCondition::where('vehicle_id', $vehicle->id)->count());
-        $this->assertCount(2, $condition->fresh()->rentalRates);
-        $this->assertDatabaseMissing('rental_rates', ['daily_rate' => 999000]);
+        $this->assertDatabaseCount('rental_zones', 1);
+        $this->assertDatabaseCount('rental_rates', 1);
+        $this->assertDatabaseHas('rental_zones', ['name' => 'Unique']);
     }
 
-    public function test_the_thresholds_must_increase(): void
+    public function test_at_least_one_zone_is_required(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'city_max_km' => 100,
-                'suburb_max_km' => 60,
-            ]))
-            ->assertSessionHasErrors('suburb_max_km');
+        $this->save($vehicle, ['zones' => []])->assertSessionHasErrors('zones');
+    }
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'long_distance_max_km' => 90,
-            ]))
-            ->assertSessionHasErrors('long_distance_max_km');
+    public function test_a_zone_needs_a_name(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [['name' => '', 'max_km' => null, 'rates' => []]],
+        ])->assertSessionHasErrors('zones.0.name');
+    }
+
+    public function test_the_bounds_must_increase(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'A', 'max_km' => 100, 'rates' => []],
+                ['name' => 'B', 'max_km' => 60, 'rates' => []],
+                ['name' => 'C', 'max_km' => null, 'rates' => []],
+            ],
+        ])->assertSessionHasErrors('zones.1.max_km');
+    }
+
+    public function test_only_the_last_zone_may_be_open_ended(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'A', 'max_km' => null, 'rates' => []],
+                ['name' => 'B', 'max_km' => 100, 'rates' => []],
+            ],
+        ])->assertSessionHasErrors('zones.0.max_km');
+    }
+
+    public function test_the_last_zone_must_be_open_ended(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'A', 'max_km' => 50, 'rates' => []],
+                ['name' => 'B', 'max_km' => 100, 'rates' => []],
+            ],
+        ])->assertSessionHasErrors('zones.1.max_km');
     }
 
     public function test_overlapping_day_ranges_in_the_same_zone_are_rejected(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
+        $this->save($vehicle, [
+            'zones' => [[
+                'name' => 'Ville',
+                'max_km' => null,
                 'rates' => [
-                    ['zone' => 'city', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
-                    ['zone' => 'city', 'min_days' => 4, 'max_days' => 9, 'daily_rate' => 160000],
+                    ['min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
+                    ['min_days' => 4, 'max_days' => 9, 'daily_rate' => 160000],
                 ],
-            ]))
-            ->assertSessionHasErrors('rates.1.min_days');
+            ]],
+        ])->assertSessionHasErrors('zones.0.rates.1.min_days');
 
         $this->assertDatabaseCount('rental_rates', 0);
-    }
-
-    public function test_an_open_ended_range_overlapping_a_later_one_is_rejected(): void
-    {
-        $vehicle = Vehicle::factory()->create();
-
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'rates' => [
-                    ['zone' => 'city', 'min_days' => 1, 'max_days' => null, 'daily_rate' => 180000],
-                    ['zone' => 'city', 'min_days' => 6, 'max_days' => 10, 'daily_rate' => 160000],
-                ],
-            ]))
-            ->assertSessionHasErrors('rates.1.min_days');
     }
 
     public function test_the_same_day_range_in_two_different_zones_is_allowed(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'rates' => [
-                    ['zone' => 'city', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000],
-                    ['zone' => 'suburb', 'min_days' => 1, 'max_days' => 5, 'daily_rate' => 220000],
-                ],
-            ]))
-            ->assertSessionHasNoErrors();
+        $this->save($vehicle, [
+            'zones' => [
+                ['name' => 'A', 'max_km' => 50, 'rates' => [['min_days' => 1, 'max_days' => 5, 'daily_rate' => 180000]]],
+                ['name' => 'B', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => 5, 'daily_rate' => 220000]]],
+            ],
+        ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseCount('rental_rates', 2);
     }
 
-    public function test_a_rate_must_have_a_valid_zone_and_a_positive_amount(): void
+    public function test_a_rate_must_carry_a_positive_amount_and_a_coherent_range(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'rates' => [['zone' => 'campagne', 'min_days' => 1, 'max_days' => null, 'daily_rate' => 1]],
-            ]))
-            ->assertSessionHasErrors('rates.0.zone');
+        $this->save($vehicle, [
+            'zones' => [['name' => 'A', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => -5]]]],
+        ])->assertSessionHasErrors('zones.0.rates.0.daily_rate');
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'rates' => [['zone' => 'city', 'min_days' => 1, 'max_days' => null, 'daily_rate' => -5]],
-            ]))
-            ->assertSessionHasErrors('rates.0.daily_rate');
+        $this->save($vehicle, [
+            'zones' => [['name' => 'A', 'max_km' => null, 'rates' => [['min_days' => 8, 'max_days' => 3, 'daily_rate' => 180000]]]],
+        ])->assertSessionHasErrors('zones.0.rates.0.max_days');
     }
 
-    public function test_the_max_days_cannot_be_lower_than_the_min_days(): void
+    public function test_a_zone_can_be_saved_without_any_rate(): void
     {
         $vehicle = Vehicle::factory()->create();
 
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload([
-                'rates' => [['zone' => 'city', 'min_days' => 8, 'max_days' => 3, 'daily_rate' => 180000]],
-            ]))
-            ->assertSessionHasErrors('rates.0.max_days');
-    }
+        $this->save($vehicle, [
+            'zones' => [['name' => 'À tarifer plus tard', 'max_km' => null, 'rates' => []]],
+        ])->assertSessionHasNoErrors();
 
-    public function test_the_grid_can_be_emptied(): void
-    {
-        $vehicle = Vehicle::factory()->create();
-        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
-        $condition->rentalRates()->create([
-            'zone' => RentalZone::City, 'min_days' => 1, 'max_days' => null, 'daily_rate' => 180000,
-        ]);
-
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload(['rates' => []]))
-            ->assertSessionHasNoErrors();
-
+        $this->assertDatabaseCount('rental_zones', 1);
         $this->assertDatabaseCount('rental_rates', 0);
     }
 
-    public function test_the_saved_grid_is_returned_when_reopening_the_form(): void
+    public function test_the_saved_zones_are_returned_when_reopening_the_form(): void
     {
         $vehicle = Vehicle::factory()->create();
-
-        $this->actingAs($this->user())
-            ->from(route('vehicles.conditions.edit', $vehicle))
-            ->put(route('vehicles.conditions.update', $vehicle), $this->payload(['city_max_km' => 35]));
+        $this->save($vehicle, $this->payload());
 
         $this->actingAs($this->user())
             ->get(route('vehicles.conditions.edit', $vehicle))
             ->assertInertia(fn ($page) => $page
-                ->where('condition.city_max_km', 35)
-                ->has('rates', 2));
+                ->has('zones', 2)
+                ->where('zones.0.name', 'Ville')
+                ->where('zones.0.max_km', 50)
+                ->has('zones.0.rates', 2)
+                ->where('zones.1.max_km', null));
     }
 }

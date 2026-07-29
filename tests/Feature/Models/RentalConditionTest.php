@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Models;
 
-use App\Enums\RentalZone;
 use App\Models\RentalCondition;
+use App\Models\RentalRate;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,8 +17,13 @@ class RentalConditionTest extends TestCase
         $vehicle = Vehicle::factory()->create();
         $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
 
-        $rate = $condition->rentalRates()->create([
-            'zone' => RentalZone::Suburb,
+        $zone = $condition->rentalZones()->create([
+            'name' => 'Périphérie',
+            'max_km' => 100,
+            'position' => 0,
+        ]);
+
+        $rate = $zone->rentalRates()->create([
             'min_days' => 1,
             'max_days' => 5,
             'daily_rate' => 220000,
@@ -26,27 +31,46 @@ class RentalConditionTest extends TestCase
 
         $this->assertTrue($condition->vehicle->is($vehicle));
         $this->assertTrue($vehicle->fresh()->rentalCondition->is($condition));
-        $this->assertTrue($condition->rentalRates->contains($rate));
-        $this->assertSame(RentalZone::Suburb, $rate->fresh()->zone);
+        $this->assertTrue($condition->rentalZones->contains($zone));
+        $this->assertTrue($zone->rentalRates->contains($rate));
         $this->assertSame('220000.00', $rate->fresh()->daily_rate);
     }
 
-    public function test_an_unsaved_condition_already_carries_the_default_thresholds(): void
+    public function test_a_zone_without_an_upper_bound_covers_any_distance(): void
     {
-        $condition = new RentalCondition;
+        $vehicle = Vehicle::factory()->create();
+        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
 
-        $this->assertSame(50, $condition->city_max_km);
-        $this->assertSame(100, $condition->suburb_max_km);
-        $this->assertSame(700, $condition->long_distance_max_km);
+        $closed = $condition->rentalZones()->create(['name' => 'Ville', 'max_km' => 50, 'position' => 0]);
+        $open = $condition->rentalZones()->create(['name' => 'Reste', 'max_km' => null, 'position' => 1]);
+
+        $this->assertFalse($closed->isOpenEnded());
+        $this->assertTrue($closed->covers(50.0));
+        $this->assertFalse($closed->covers(51.0));
+
+        $this->assertTrue($open->isOpenEnded());
+        $this->assertTrue($open->covers(9999.0));
     }
 
-    public function test_the_open_zone_reports_no_upper_bound(): void
+    public function test_the_factories_build_a_usable_set_of_conditions(): void
     {
-        $condition = new RentalCondition;
+        $condition = RentalCondition::factory()->withDefaultZones()->create();
 
-        $this->assertSame(50, $condition->maxKmFor(RentalZone::City));
-        $this->assertSame(100, $condition->maxKmFor(RentalZone::Suburb));
-        $this->assertSame(700, $condition->maxKmFor(RentalZone::LongDistance));
-        $this->assertNull($condition->maxKmFor(RentalZone::VeryLongDistance));
+        $this->assertCount(4, $condition->rentalZones);
+        $this->assertSame('Ville', $condition->rentalZones->firstWhere('position', 0)->name);
+        $this->assertNull($condition->rentalZones->firstWhere('position', 3)->max_km);
+
+        $rate = RentalRate::factory()->create();
+
+        $this->assertNotNull($rate->rentalZone);
+        $this->assertTrue($rate->rentalZone->rentalRates->contains($rate));
+    }
+
+    public function test_the_default_zones_offer_the_usual_four_bands(): void
+    {
+        $this->assertSame(
+            [['Ville', 50], ['Périphérie', 100], ['Longue distance', 700], ['Très longue distance', null]],
+            RentalCondition::DEFAULT_ZONES,
+        );
     }
 }

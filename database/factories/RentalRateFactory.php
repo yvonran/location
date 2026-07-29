@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Enums\RentalZone;
-use App\Models\RentalCondition;
 use App\Models\RentalRate;
+use App\Models\RentalZone;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,16 +16,10 @@ class RentalRateFactory extends Factory
     public function definition(): array
     {
         return [
-            'rental_condition_id' => RentalCondition::factory(),
-            'zone' => fake()->randomElement(RentalZone::cases()),
+            'rental_zone_id' => RentalZone::factory(),
             'min_days' => 1,
             'max_days' => null,
             'daily_rate' => fake()->numberBetween(150, 500) * 1000,
         ];
-    }
-
-    public function zone(RentalZone $zone): static
-    {
-        return $this->state(fn () => ['zone' => $zone]);
     }
 }

@@ -4,11 +4,7 @@ import Heading from '@/components/Heading.vue';
 import RentalConditionForm from '@/pages/vehicles/RentalConditionForm.vue';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/vehicles';
-import type {
-    RentalConditionThresholds,
-    RentalRate,
-    RentalZoneOption,
-} from '@/types/rental';
+import type { RentalZone } from '@/types/rental';
 
 defineProps<{
     vehicle: {
@@ -18,9 +14,7 @@ defineProps<{
         model: string;
         registration_number: string;
     };
-    condition: RentalConditionThresholds;
-    rates: RentalRate[];
-    zones: RentalZoneOption[];
+    zones: RentalZone[];
 }>();
 
 defineOptions({
@@ -43,11 +37,6 @@ defineOptions({
             :description="`${vehicle.name} — ${vehicle.brand} ${vehicle.model} (${vehicle.registration_number})`"
         />
 
-        <RentalConditionForm
-            :vehicle-id="vehicle.id"
-            :condition="condition"
-            :rates="rates"
-            :zones="zones"
-        />
+        <RentalConditionForm :vehicle-id="vehicle.id" :zones="zones" />
     </div>
 </template>

@@ -25,20 +25,25 @@ class VehicleRentalConditionController extends Controller
     public function update(UpdateRentalConditionRequest $request, Vehicle $vehicle): RedirectResponse
     {
         DB::transaction(function () use ($request, $vehicle) {
-            $condition = $vehicle->rentalCondition()->updateOrCreate([], $request->safe()->only([
-                'city_max_km', 'suburb_max_km', 'long_distance_max_km',
-            ]));
+            $condition = $vehicle->rentalCondition()->firstOrCreate([]);
 
-            // Le formulaire renvoie la grille complète : on la remplace d'un bloc.
-            $condition->rentalRates()->delete();
+            // Le formulaire renvoie le découpage complet : on le remplace d'un bloc.
+            $condition->rentalZones()->delete();
 
-            foreach ($request->validated('rates', []) as $rate) {
-                $condition->rentalRates()->create([
-                    'zone' => $rate['zone'],
-                    'min_days' => $rate['min_days'],
-                    'max_days' => $rate['max_days'] ?? null,
-                    'daily_rate' => $rate['daily_rate'],
+            foreach (array_values($request->validated('zones', [])) as $position => $zoneInput) {
+                $zone = $condition->rentalZones()->create([
+                    'name' => $zoneInput['name'],
+                    'max_km' => $zoneInput['max_km'] ?? null,
+                    'position' => $position,
                 ]);
+
+                foreach ($zoneInput['rates'] ?? [] as $rate) {
+                    $zone->rentalRates()->create([
+                        'min_days' => $rate['min_days'],
+                        'max_days' => $rate['max_days'] ?? null,
+                        'daily_rate' => $rate['daily_rate'],
+                    ]);
+                }
             }
         });
 

@@ -17,9 +17,22 @@ class RentalConditionFactory extends Factory
     {
         return [
             'vehicle_id' => Vehicle::factory(),
-            'city_max_km' => RentalCondition::DEFAULT_CITY_MAX_KM,
-            'suburb_max_km' => RentalCondition::DEFAULT_SUBURB_MAX_KM,
-            'long_distance_max_km' => RentalCondition::DEFAULT_LONG_DISTANCE_MAX_KM,
         ];
+    }
+
+    /**
+     * Conditions garnies du découpage proposé par défaut.
+     */
+    public function withDefaultZones(): static
+    {
+        return $this->afterCreating(function (RentalCondition $condition) {
+            foreach (RentalCondition::DEFAULT_ZONES as $position => [$name, $maxKm]) {
+                $condition->rentalZones()->create([
+                    'name' => $name,
+                    'max_km' => $maxKm,
+                    'position' => $position,
+                ]);
+            }
+        });
     }
 }

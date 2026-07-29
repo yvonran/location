@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Services;
 
-use App\Enums\RentalZone;
 use App\Models\RentalCondition;
 use App\Models\Vehicle;
 use App\Services\RentalConditionService;
@@ -23,97 +22,111 @@ class RentalConditionServiceTest extends TestCase
         $this->service = app(RentalConditionService::class);
     }
 
-    private function vehicleWithRates(array $thresholds = []): Vehicle
+    /**
+     * @param  array<int, array{0: string, 1: int|null, 2: array<int, array{0: int, 1: int|null, 2: int}>}>  $zones
+     */
+    private function vehicleWithZones(array $zones): Vehicle
     {
         $vehicle = Vehicle::factory()->create();
+        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
 
-        $condition = RentalCondition::create([
-            'vehicle_id' => $vehicle->id,
-            ...$thresholds,
-        ]);
-
-        foreach ([
-            [RentalZone::City, 1, 5, 180000],
-            [RentalZone::City, 6, null, 160000],
-            [RentalZone::Suburb, 1, null, 220000],
-            [RentalZone::LongDistance, 1, null, 250000],
-            [RentalZone::VeryLongDistance, 1, null, 350000],
-        ] as [$zone, $minDays, $maxDays, $dailyRate]) {
-            $condition->rentalRates()->create([
-                'zone' => $zone, 'min_days' => $minDays,
-                'max_days' => $maxDays, 'daily_rate' => $dailyRate,
+        foreach ($zones as $position => [$name, $maxKm, $rates]) {
+            $zone = $condition->rentalZones()->create([
+                'name' => $name, 'max_km' => $maxKm, 'position' => $position,
             ]);
+
+            foreach ($rates as [$minDays, $maxDays, $dailyRate]) {
+                $zone->rentalRates()->create([
+                    'min_days' => $minDays, 'max_days' => $maxDays, 'daily_rate' => $dailyRate,
+                ]);
+            }
         }
 
         return $vehicle->fresh();
     }
 
+    private function defaultVehicle(): Vehicle
+    {
+        return $this->vehicleWithZones([
+            ['Ville', 50, [[1, 5, 180000], [6, null, 160000]]],
+            ['Périphérie', 100, [[1, null, 220000]]],
+            ['Longue distance', 700, [[1, null, 250000]]],
+            ['Très longue distance', null, [[1, null, 350000]]],
+        ]);
+    }
+
     public static function zoneCases(): array
     {
         return [
-            'en deçà de la limite ville' => [10.0, RentalZone::City],
-            'pile sur la limite ville' => [50.0, RentalZone::City],
-            'juste au-dessus de la limite ville' => [50.5, RentalZone::Suburb],
-            'pile sur la limite périphérie' => [100.0, RentalZone::Suburb],
-            'au-dessus de la périphérie' => [101.0, RentalZone::LongDistance],
-            'pile sur la limite longue distance' => [700.0, RentalZone::LongDistance],
-            'au-delà de 700 km' => [700.1, RentalZone::VeryLongDistance],
-            'très loin' => [1200.0, RentalZone::VeryLongDistance],
+            'en deçà de la première borne' => [10.0, 'Ville'],
+            'pile sur la première borne' => [50.0, 'Ville'],
+            'juste au-dessus' => [50.5, 'Périphérie'],
+            'pile sur la deuxième borne' => [100.0, 'Périphérie'],
+            'au-dessus de la deuxième' => [101.0, 'Longue distance'],
+            'pile sur la troisième borne' => [700.0, 'Longue distance'],
+            'au-delà de la dernière borne' => [700.1, 'Très longue distance'],
+            'très loin' => [1200.0, 'Très longue distance'],
         ];
     }
 
     #[DataProvider('zoneCases')]
-    public function test_the_zone_is_resolved_from_the_one_way_distance(float $oneWayKm, RentalZone $expected): void
+    public function test_the_zone_is_resolved_from_the_one_way_distance(float $oneWayKm, string $expected): void
     {
-        $vehicle = $this->vehicleWithRates();
+        $vehicle = $this->defaultVehicle();
 
-        $this->assertSame($expected, $this->service->zoneFor($vehicle, $oneWayKm));
+        $this->assertSame($expected, $this->service->zoneFor($vehicle, $oneWayKm)?->name);
     }
 
-    public function test_the_thresholds_are_configurable_per_vehicle(): void
+    public function test_a_vehicle_can_use_its_own_zone_names_and_bounds(): void
     {
-        $vehicle = $this->vehicleWithRates([
-            'city_max_km' => 20,
-            'suburb_max_km' => 60,
-            'long_distance_max_km' => 400,
+        $vehicle = $this->vehicleWithZones([
+            ['Antananarivo intra-muros', 20, [[1, null, 150000]]],
+            ['Grand Tana', 60, [[1, null, 200000]]],
+            ['Reste du pays', null, [[1, null, 400000]]],
         ]);
 
-        $this->assertSame(RentalZone::City, $this->service->zoneFor($vehicle, 20.0));
-        $this->assertSame(RentalZone::Suburb, $this->service->zoneFor($vehicle, 45.0));
-        $this->assertSame(RentalZone::LongDistance, $this->service->zoneFor($vehicle, 399.0));
-        $this->assertSame(RentalZone::VeryLongDistance, $this->service->zoneFor($vehicle, 401.0));
+        $this->assertSame('Antananarivo intra-muros', $this->service->zoneFor($vehicle, 20.0)?->name);
+        $this->assertSame('Grand Tana', $this->service->zoneFor($vehicle, 45.0)?->name);
+        $this->assertSame('Reste du pays', $this->service->zoneFor($vehicle, 5000.0)?->name);
+        $this->assertSame('400000.00', $this->service->findRate($vehicle, 5000.0, 1)?->daily_rate);
+    }
+
+    public function test_a_single_open_zone_covers_everything(): void
+    {
+        $vehicle = $this->vehicleWithZones([
+            ['Tarif unique', null, [[1, null, 200000]]],
+        ]);
+
+        $this->assertSame('Tarif unique', $this->service->zoneFor($vehicle, 0.0)?->name);
+        $this->assertSame('Tarif unique', $this->service->zoneFor($vehicle, 12000.0)?->name);
     }
 
     public function test_the_rate_matches_both_the_zone_and_the_day_range(): void
     {
-        $vehicle = $this->vehicleWithRates();
+        $vehicle = $this->defaultVehicle();
 
-        $short = $this->service->findRate($vehicle, 30.0, 3);
-        $long = $this->service->findRate($vehicle, 30.0, 9);
-
-        $this->assertSame('180000.00', $short?->daily_rate);
-        $this->assertSame('160000.00', $long?->daily_rate);
-    }
-
-    public function test_an_open_ended_day_range_matches_any_long_duration(): void
-    {
-        $vehicle = $this->vehicleWithRates();
-
-        $rate = $this->service->findRate($vehicle, 900.0, 45);
-
-        $this->assertSame(RentalZone::VeryLongDistance, $rate?->zone);
-        $this->assertSame('350000.00', $rate?->daily_rate);
+        $this->assertSame('180000.00', $this->service->findRate($vehicle, 30.0, 3)?->daily_rate);
+        $this->assertSame('160000.00', $this->service->findRate($vehicle, 30.0, 9)?->daily_rate);
     }
 
     public function test_no_rate_is_returned_when_no_day_range_matches(): void
     {
-        $vehicle = Vehicle::factory()->create();
-        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
-        $condition->rentalRates()->create([
-            'zone' => RentalZone::City, 'min_days' => 5, 'max_days' => 10, 'daily_rate' => 180000,
+        $vehicle = $this->vehicleWithZones([
+            ['Ville', null, [[5, 10, 180000]]],
         ]);
 
-        $this->assertNull($this->service->findRate($vehicle->fresh(), 10.0, 2));
+        $this->assertNull($this->service->findRate($vehicle, 10.0, 2));
+    }
+
+    public function test_a_distance_beyond_a_closed_last_zone_has_no_zone(): void
+    {
+        $vehicle = $this->vehicleWithZones([
+            ['Ville', 50, [[1, null, 180000]]],
+        ]);
+
+        $this->assertSame('Ville', $this->service->zoneFor($vehicle, 40.0)?->name);
+        $this->assertNull($this->service->zoneFor($vehicle, 60.0));
+        $this->assertNull($this->service->findRate($vehicle, 60.0, 2));
     }
 
     public function test_a_vehicle_without_conditions_has_no_zone_and_no_rate(): void
@@ -122,5 +135,33 @@ class RentalConditionServiceTest extends TestCase
 
         $this->assertNull($this->service->zoneFor($vehicle, 30.0));
         $this->assertNull($this->service->findRate($vehicle, 30.0, 2));
+    }
+
+    public function test_a_vehicle_without_conditions_gets_the_default_zones_in_the_editor(): void
+    {
+        $vehicle = Vehicle::factory()->create();
+
+        $props = $this->service->editorProps($vehicle);
+
+        $this->assertCount(4, $props['zones']);
+        $this->assertSame('Ville', $props['zones'][0]['name']);
+        $this->assertSame(50, $props['zones'][0]['max_km']);
+        $this->assertNull($props['zones'][3]['max_km']);
+        $this->assertSame([], $props['zones'][0]['rates']);
+    }
+
+    public function test_the_editor_returns_the_saved_zones_in_order(): void
+    {
+        $vehicle = $this->vehicleWithZones([
+            ['Courte', 30, [[1, null, 100000]]],
+            ['Moyenne', 200, []],
+            ['Longue', null, [[1, 3, 300000], [4, null, 280000]]],
+        ]);
+
+        $props = $this->service->editorProps($vehicle);
+
+        $this->assertSame(['Courte', 'Moyenne', 'Longue'], array_column($props['zones'], 'name'));
+        $this->assertSame([30, 200, null], array_column($props['zones'], 'max_km'));
+        $this->assertCount(2, $props['zones'][2]['rates']);
     }
 }

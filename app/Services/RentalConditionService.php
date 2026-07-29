@@ -2,41 +2,62 @@
 
 namespace App\Services;
 
-use App\Enums\RentalZone;
 use App\Models\RentalCondition;
 use App\Models\RentalRate;
+use App\Models\RentalZone;
 use App\Models\Vehicle;
 
 class RentalConditionService
 {
     /**
      * Props du formulaire de conditions, partagées par la page dédiée et la page
-     * d'édition du véhicule. Un véhicule sans conditions reçoit les seuils par défaut.
+     * d'édition du véhicule. Un véhicule sans conditions reçoit le découpage
+     * proposé par défaut, qu'il reste libre de modifier avant d'enregistrer.
      *
-     * @return array{condition: array{city_max_km: int, suburb_max_km: int, long_distance_max_km: int}, rates: iterable<int, RentalRate>, zones: array<int, array{value: string, label: string}>}
+     * @return array{zones: array<int, array{name: string, max_km: int|null, rates: array<int, array{min_days: int, max_days: int|null, daily_rate: string}>}>}
      */
     public function editorProps(Vehicle $vehicle): array
     {
-        $condition = $vehicle->rentalCondition ?? new RentalCondition;
+        $condition = $vehicle->rentalCondition;
 
-        return [
-            'condition' => [
-                'city_max_km' => $condition->city_max_km,
-                'suburb_max_km' => $condition->suburb_max_km,
-                'long_distance_max_km' => $condition->long_distance_max_km,
-            ],
-            'rates' => $condition->exists
-                ? $condition->rentalRates()->orderBy('zone')->orderBy('min_days')->get()
-                : [],
-            'zones' => array_map(
-                fn (RentalZone $zone) => ['value' => $zone->value, 'label' => $zone->label()],
-                RentalZone::cases(),
-            ),
-        ];
+        if (! $condition instanceof RentalCondition) {
+            return ['zones' => $this->defaultZones()];
+        }
+
+        $zones = $condition->rentalZones()
+            ->with(['rentalRates' => fn ($query) => $query->orderBy('min_days')])
+            ->orderBy('position')
+            ->get()
+            ->map(fn (RentalZone $zone) => [
+                'name' => $zone->name,
+                'max_km' => $zone->max_km,
+                'rates' => $zone->rentalRates
+                    ->map(fn (RentalRate $rate) => [
+                        'min_days' => $rate->min_days,
+                        'max_days' => $rate->max_days,
+                        'daily_rate' => $rate->daily_rate,
+                    ])
+                    ->all(),
+            ])
+            ->all();
+
+        return ['zones' => $zones === [] ? $this->defaultZones() : $zones];
     }
 
     /**
-     * Zone applicable au trajet aller, ou null si le véhicule n'a pas de conditions de location.
+     * @return array<int, array{name: string, max_km: int|null, rates: array<int, mixed>}>
+     */
+    private function defaultZones(): array
+    {
+        return array_map(
+            fn (array $zone) => ['name' => $zone[0], 'max_km' => $zone[1], 'rates' => []],
+            RentalCondition::DEFAULT_ZONES,
+        );
+    }
+
+    /**
+     * Zone applicable au trajet aller, ou null si le véhicule n'a pas de
+     * conditions ou qu'aucune zone ne couvre cette distance.
      */
     public function zoneFor(Vehicle $vehicle, float $oneWayKm): ?RentalZone
     {
@@ -48,14 +69,13 @@ class RentalConditionService
      */
     public function findRate(Vehicle $vehicle, float $oneWayKm, int $numberOfDays): ?RentalRate
     {
-        $condition = $vehicle->rentalCondition;
+        $zone = $this->zoneFor($vehicle, $oneWayKm);
 
-        if (! $condition instanceof RentalCondition) {
+        if (! $zone instanceof RentalZone) {
             return null;
         }
 
-        return $condition->rentalRates()
-            ->where('zone', $condition->zoneFor($oneWayKm))
+        return $zone->rentalRates()
             ->where('min_days', '<=', $numberOfDays)
             ->where(function ($query) use ($numberOfDays) {
                 $query->whereNull('max_days')->orWhere('max_days', '>=', $numberOfDays);

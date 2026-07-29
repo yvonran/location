@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\AmountMode;
-use App\Enums\RentalZone;
 use App\Models\Customer;
 use App\Models\OptionType;
 use App\Models\RentalCondition;
@@ -65,28 +64,37 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        foreach ([$starex, $landCruiser] as $vehicle) {
+        // Découpage de démonstration : des zones libres, propres à chaque véhicule.
+        foreach ([
+            [$starex, [
+                ['Ville', 50, [[1, 5, 180000], [6, null, 160000]]],
+                ['Périphérie', 100, [[1, 5, 220000], [6, null, 200000]]],
+                ['Longue distance', 700, [[1, 5, 250000], [6, 10, 220000], [11, null, 200000]]],
+                ['Très longue distance', null, [[1, 5, 350000], [6, 10, 310000], [11, null, 280000]]],
+            ]],
+            [$landCruiser, [
+                ['Antananarivo intra-muros', 40, [[1, null, 230000]]],
+                ['Grand Tana', 120, [[1, 5, 270000], [6, null, 250000]]],
+                ['Province', 800, [[1, 5, 300000], [6, 10, 280000], [11, null, 260000]]],
+                ['Grand Sud', null, [[1, 10, 420000], [11, null, 380000]]],
+            ]],
+        ] as [$vehicle, $zones]) {
             $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
-            $premium = $vehicle->is($landCruiser) ? 50000 : 0;
 
-            foreach ([
-                [RentalZone::City, 1, 5, 180000],
-                [RentalZone::City, 6, null, 160000],
-                [RentalZone::Suburb, 1, 5, 220000],
-                [RentalZone::Suburb, 6, null, 200000],
-                [RentalZone::LongDistance, 1, 5, 250000],
-                [RentalZone::LongDistance, 6, 10, 220000],
-                [RentalZone::LongDistance, 11, null, 200000],
-                [RentalZone::VeryLongDistance, 1, 5, 350000],
-                [RentalZone::VeryLongDistance, 6, 10, 310000],
-                [RentalZone::VeryLongDistance, 11, null, 280000],
-            ] as [$zone, $minDays, $maxDays, $dailyRate]) {
-                $condition->rentalRates()->create([
-                    'zone' => $zone,
-                    'min_days' => $minDays,
-                    'max_days' => $maxDays,
-                    'daily_rate' => $dailyRate + $premium,
+            foreach ($zones as $position => [$name, $maxKm, $rates]) {
+                $zone = $condition->rentalZones()->create([
+                    'name' => $name,
+                    'max_km' => $maxKm,
+                    'position' => $position,
                 ]);
+
+                foreach ($rates as [$minDays, $maxDays, $dailyRate]) {
+                    $zone->rentalRates()->create([
+                        'min_days' => $minDays,
+                        'max_days' => $maxDays,
+                        'daily_rate' => $dailyRate,
+                    ]);
+                }
             }
         }
 
