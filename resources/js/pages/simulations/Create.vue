@@ -47,8 +47,8 @@ const form = useForm({
     vehicle_id: null as number | null,
     number_of_days: 1,
     departure_time: '',
-    meal_included: false,
-    fuel_included: false,
+    meal_charged_to_client: true,
+    fuel_charged_to_client: true,
     same_return_route: true,
     legs: {
         outbound: [makeLeg()],
@@ -159,24 +159,30 @@ const errors = computed(() => form.errors as Record<string, string>);
                 <div
                     class="flex items-center gap-3 rounded-lg border border-sidebar-border/70 p-3 dark:border-sidebar-border"
                 >
-                    <Checkbox id="meal_included" v-model="form.meal_included" />
-                    <Label for="meal_included" class="font-normal">
-                        Repas client à ma charge
+                    <Checkbox
+                        id="meal_charged_to_client"
+                        v-model="form.meal_charged_to_client"
+                    />
+                    <Label for="meal_charged_to_client" class="font-normal">
+                        Repas chauffeur à la charge du client
                     </Label>
                 </div>
 
                 <div
                     class="flex items-center gap-3 rounded-lg border border-sidebar-border/70 p-3 dark:border-sidebar-border"
                 >
-                    <Checkbox id="fuel_included" v-model="form.fuel_included" />
-                    <Label for="fuel_included" class="font-normal">
-                        Carburant à ma charge
+                    <Checkbox
+                        id="fuel_charged_to_client"
+                        v-model="form.fuel_charged_to_client"
+                    />
+                    <Label for="fuel_charged_to_client" class="font-normal">
+                        Carburant à la charge du client
                     </Label>
                 </div>
             </div>
             <p class="text-xs text-muted-foreground">
-                Si une case n'est pas cochée, son coût est calculé
-                automatiquement.
+                Une case cochée fait facturer le coût au client, calculé
+                automatiquement. Décochée, l'agence l'absorbe et il vaut zéro.
             </p>
 
             <Button type="submit" :disabled="form.processing">

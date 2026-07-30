@@ -14,7 +14,7 @@ class SimulationSettingsTableTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('simulation_settings'));
         $this->assertTrue(Schema::hasColumns('simulation_settings', [
-            'id', 'fuel_price_per_liter', 'client_meal_price', 'created_at', 'updated_at',
+            'id', 'fuel_price_per_liter', 'driver_meal_price', 'created_at', 'updated_at',
         ]));
     }
 }

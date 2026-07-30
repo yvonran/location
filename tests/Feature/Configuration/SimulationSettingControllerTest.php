@@ -40,14 +40,14 @@ class SimulationSettingControllerTest extends TestCase
 
     public function test_a_super_admin_sees_the_current_settings(): void
     {
-        SimulationSetting::current()->update(['fuel_price_per_liter' => 6000, 'client_meal_price' => 8000]);
+        SimulationSetting::current()->update(['fuel_price_per_liter' => 6000, 'driver_meal_price' => 8000]);
 
         $this->actingAs($this->superAdmin())
             ->get(route('configuration.simulation-settings.edit'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('setting.fuel_price_per_liter', '6000.00')
-                ->where('setting.client_meal_price', '8000.00'));
+                ->where('setting.driver_meal_price', '8000.00'));
     }
 
     public function test_a_super_admin_can_update_the_settings(): void
@@ -56,14 +56,14 @@ class SimulationSettingControllerTest extends TestCase
             ->from(route('configuration.simulation-settings.edit'))
             ->put(route('configuration.simulation-settings.update'), [
                 'fuel_price_per_liter' => 5500,
-                'client_meal_price' => 7500,
+                'driver_meal_price' => 7500,
             ])
             ->assertSessionHasNoErrors();
 
         $setting = SimulationSetting::current();
 
         $this->assertSame('5500.00', (string) $setting->fuel_price_per_liter);
-        $this->assertSame('7500.00', (string) $setting->client_meal_price);
+        $this->assertSame('7500.00', (string) $setting->driver_meal_price);
     }
 
     public function test_the_amounts_must_be_non_negative_numbers(): void
@@ -72,8 +72,8 @@ class SimulationSettingControllerTest extends TestCase
             ->from(route('configuration.simulation-settings.edit'))
             ->put(route('configuration.simulation-settings.update'), [
                 'fuel_price_per_liter' => -1,
-                'client_meal_price' => 'beaucoup',
+                'driver_meal_price' => 'beaucoup',
             ])
-            ->assertSessionHasErrors(['fuel_price_per_liter', 'client_meal_price']);
+            ->assertSessionHasErrors(['fuel_price_per_liter', 'driver_meal_price']);
     }
 }

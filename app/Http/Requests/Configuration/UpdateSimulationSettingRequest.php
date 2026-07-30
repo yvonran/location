@@ -18,7 +18,7 @@ class UpdateSimulationSettingRequest extends FormRequest
     {
         return [
             'fuel_price_per_liter' => ['required', 'numeric', 'min:0'],
-            'client_meal_price' => ['required', 'numeric', 'min:0'],
+            'driver_meal_price' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -29,7 +29,7 @@ class UpdateSimulationSettingRequest extends FormRequest
     {
         return [
             'fuel_price_per_liter' => 'prix du litre de carburant',
-            'client_meal_price' => 'prix du repas client',
+            'driver_meal_price' => 'prix du repas chauffeur',
         ];
     }
 }

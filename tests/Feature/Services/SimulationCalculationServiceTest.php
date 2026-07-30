@@ -35,19 +35,19 @@ class SimulationCalculationServiceTest extends TestCase
         $zone->rentalRates()->create(['min_days' => $minDays, 'max_days' => $maxDays, 'daily_rate' => $dailyRate]);
     }
 
-    public function test_it_calculates_fuel_and_meal_costs_when_neither_is_covered(): void
+    public function test_it_bills_fuel_and_driver_meals_when_they_are_charged_to_the_client(): void
     {
         $vehicle = $this->vehicle();
         $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
-        SimulationSetting::current()->update(['fuel_price_per_liter' => 5000, 'client_meal_price' => 7000]);
+        SimulationSetting::current()->update(['fuel_price_per_liter' => 5000, 'driver_meal_price' => 7000]);
 
         $service = app(SimulationCalculationService::class);
 
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => false,
-            'fuel_included' => false,
+            'meal_charged_to_client' => true,
+            'fuel_charged_to_client' => true,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -67,7 +67,7 @@ class SimulationCalculationServiceTest extends TestCase
         $this->assertSame('1017000.00', (string) $simulation->total);
     }
 
-    public function test_it_skips_fuel_and_meal_costs_when_both_are_covered(): void
+    public function test_it_bills_nothing_when_the_agency_absorbs_fuel_and_driver_meals(): void
     {
         $vehicle = $this->vehicle();
         $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
@@ -77,8 +77,8 @@ class SimulationCalculationServiceTest extends TestCase
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -92,11 +92,36 @@ class SimulationCalculationServiceTest extends TestCase
         $this->assertSame('750000.00', (string) $simulation->total);
     }
 
+    public function test_the_two_charges_are_independent(): void
+    {
+        $vehicle = $this->vehicle();
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
+        SimulationSetting::current()->update(['fuel_price_per_liter' => 5000, 'driver_meal_price' => 7000]);
+
+        $simulation = app(SimulationCalculationService::class)->createSimulation([
+            'vehicle_id' => $vehicle->id,
+            'number_of_days' => 3,
+            // Le carburant est refacturé, le repas du chauffeur reste pour l'agence.
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => true,
+            'same_return_route' => false,
+            'legs' => [
+                'outbound' => [
+                    ['from_point' => 'Antananarivo', 'to_point' => 'Toamasina', 'distance_km' => 450],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('225000.00', (string) $simulation->fuel_cost);
+        $this->assertSame('0.00', (string) $simulation->meal_cost);
+        $this->assertSame('975000.00', (string) $simulation->total);
+    }
+
     public function test_a_departure_time_before_noon_counts_three_meals_per_day(): void
     {
         $vehicle = $this->vehicle();
         $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
-        SimulationSetting::current()->update(['fuel_price_per_liter' => 5000, 'client_meal_price' => 7000]);
+        SimulationSetting::current()->update(['fuel_price_per_liter' => 5000, 'driver_meal_price' => 7000]);
 
         $service = app(SimulationCalculationService::class);
 
@@ -104,8 +129,8 @@ class SimulationCalculationServiceTest extends TestCase
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
             'departure_time' => '06:00',
-            'meal_included' => false,
-            'fuel_included' => true,
+            'meal_charged_to_client' => true,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -128,8 +153,8 @@ class SimulationCalculationServiceTest extends TestCase
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -160,8 +185,8 @@ class SimulationCalculationServiceTest extends TestCase
         $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -181,8 +206,8 @@ class SimulationCalculationServiceTest extends TestCase
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 7,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => true,
             'legs' => [
                 'outbound' => [
@@ -217,8 +242,8 @@ class SimulationCalculationServiceTest extends TestCase
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [
@@ -246,8 +271,8 @@ class SimulationCalculationServiceTest extends TestCase
         $simulation = $service->createSimulation([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 7,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => false,
             'legs' => [
                 'outbound' => [

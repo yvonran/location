@@ -30,8 +30,8 @@ interface SimulationProps {
     distance_km: string;
     same_return_route: boolean;
     daily_rate: string;
-    meal_included: boolean;
-    fuel_included: boolean;
+    meal_charged_to_client: boolean;
+    fuel_charged_to_client: boolean;
     meal_cost: string;
     fuel_cost: string;
     vehicle_amount: string;
@@ -87,7 +87,10 @@ function formatAr(value: string | number): string {
             <div>
                 <h2 class="text-sm font-medium">
                     Retour
-                    <Badge v-if="props.simulation.same_return_route" variant="secondary">
+                    <Badge
+                        v-if="props.simulation.same_return_route"
+                        variant="secondary"
+                    >
                         Même trajet que l'aller
                     </Badge>
                 </h2>
@@ -124,29 +127,23 @@ function formatAr(value: string | number): string {
             <div>
                 <dt class="text-muted-foreground">Carburant</dt>
                 <dd>
-                    <Badge
-                        v-if="props.simulation.fuel_included"
-                        variant="secondary"
-                    >
-                        À la charge de l'agence
-                    </Badge>
-                    <span v-else>{{
+                    <span v-if="props.simulation.fuel_charged_to_client">{{
                         formatAr(props.simulation.fuel_cost)
                     }}</span>
+                    <Badge v-else variant="secondary">
+                        À la charge de l'agence
+                    </Badge>
                 </dd>
             </div>
             <div>
-                <dt class="text-muted-foreground">Repas client</dt>
+                <dt class="text-muted-foreground">Repas chauffeur</dt>
                 <dd>
-                    <Badge
-                        v-if="props.simulation.meal_included"
-                        variant="secondary"
-                    >
-                        À la charge de l'agence
-                    </Badge>
-                    <span v-else>{{
+                    <span v-if="props.simulation.meal_charged_to_client">{{
                         formatAr(props.simulation.meal_cost)
                     }}</span>
+                    <Badge v-else variant="secondary">
+                        À la charge de l'agence
+                    </Badge>
                 </dd>
             </div>
         </dl>

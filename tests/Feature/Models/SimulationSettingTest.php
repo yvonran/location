@@ -18,17 +18,17 @@ class SimulationSettingTest extends TestCase
 
         $this->assertDatabaseCount('simulation_settings', 1);
         $this->assertGreaterThan(0, (float) $setting->fuel_price_per_liter);
-        $this->assertGreaterThan(0, (float) $setting->client_meal_price);
+        $this->assertGreaterThan(0, (float) $setting->driver_meal_price);
     }
 
     public function test_it_returns_the_existing_row_instead_of_duplicating_it(): void
     {
-        SimulationSetting::current()->update(['fuel_price_per_liter' => 6000, 'client_meal_price' => 8000]);
+        SimulationSetting::current()->update(['fuel_price_per_liter' => 6000, 'driver_meal_price' => 8000]);
 
         $setting = SimulationSetting::current();
 
         $this->assertDatabaseCount('simulation_settings', 1);
         $this->assertSame('6000.00', (string) $setting->fuel_price_per_liter);
-        $this->assertSame('8000.00', (string) $setting->client_meal_price);
+        $this->assertSame('8000.00', (string) $setting->driver_meal_price);
     }
 }

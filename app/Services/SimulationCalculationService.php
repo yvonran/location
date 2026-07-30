@@ -35,7 +35,7 @@ class SimulationCalculationService
     /**
      * @return array{
      *     vehicle_id: int, number_of_days: int, departure_time: ?string, distance_km: float,
-     *     daily_rate: float, meal_included: bool, fuel_included: bool, meal_cost: float,
+     *     daily_rate: float, meal_charged_to_client: bool, fuel_charged_to_client: bool, meal_cost: float,
      *     fuel_cost: float, vehicle_amount: float, total: float, same_return_route: bool, legs: array
      * }
      */
@@ -44,8 +44,8 @@ class SimulationCalculationService
         $vehicle = Vehicle::findOrFail($input['vehicle_id']);
         $numberOfDays = (int) $input['number_of_days'];
         $departureTime = $input['departure_time'] ?? null;
-        $mealIncluded = (bool) ($input['meal_included'] ?? false);
-        $fuelIncluded = (bool) ($input['fuel_included'] ?? false);
+        $mealChargedToClient = (bool) ($input['meal_charged_to_client'] ?? false);
+        $fuelChargedToClient = (bool) ($input['fuel_charged_to_client'] ?? false);
         $sameReturnRoute = (bool) ($input['same_return_route'] ?? false);
 
         $legsInput = $input['legs'] ?? [];
@@ -82,16 +82,18 @@ class SimulationCalculationService
 
         $settings = SimulationSetting::current();
 
-        $fuelCost = $fuelIncluded ? 0.0 : round(
+        // Seul ce qui est à la charge du client est facturé ; le reste est
+        // absorbé par l'agence et vaut donc zéro dans la simulation.
+        $fuelCost = $fuelChargedToClient ? round(
             ((float) ($vehicle->average_consumption ?? 0) / 100) * $distanceKm * (float) $settings->fuel_price_per_liter,
             2,
-        );
+        ) : 0.0;
 
-        $mealCost = $mealIncluded ? 0.0 : $this->mealCalculator->mealCost(
+        $mealCost = $mealChargedToClient ? $this->mealCalculator->mealCost(
             $numberOfDays,
             $departureTime,
-            (float) $settings->client_meal_price,
-        );
+            (float) $settings->driver_meal_price,
+        ) : 0.0;
 
         $legs = [
             ...array_map(fn (array $leg) => [
@@ -114,8 +116,8 @@ class SimulationCalculationService
             'departure_time' => $departureTime,
             'distance_km' => $distanceKm,
             'daily_rate' => $dailyRate,
-            'meal_included' => $mealIncluded,
-            'fuel_included' => $fuelIncluded,
+            'meal_charged_to_client' => $mealChargedToClient,
+            'fuel_charged_to_client' => $fuelChargedToClient,
             'meal_cost' => $mealCost,
             'fuel_cost' => $fuelCost,
             'vehicle_amount' => $vehicleAmount,

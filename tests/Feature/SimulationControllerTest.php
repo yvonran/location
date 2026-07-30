@@ -43,8 +43,8 @@ class SimulationControllerTest extends TestCase
         return array_merge([
             'vehicle_id' => $vehicle->id,
             'number_of_days' => 3,
-            'meal_included' => true,
-            'fuel_included' => true,
+            'meal_charged_to_client' => false,
+            'fuel_charged_to_client' => false,
             'same_return_route' => true,
             'legs' => [
                 'outbound' => [

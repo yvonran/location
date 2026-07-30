@@ -20,7 +20,10 @@ const props = defineProps<{
 const legs = defineModel<LegState[]>({ required: true });
 
 function addLeg() {
-    legs.value = [...legs.value, { from_point: '', to_point: '', distance_km: null }];
+    legs.value = [
+        ...legs.value,
+        { from_point: '', to_point: '', distance_km: null },
+    ];
 }
 
 function removeLeg(index: number) {

@@ -10,7 +10,7 @@ import { edit, update } from '@/routes/configuration/simulation-settings';
 
 interface SimulationSettingProps {
     fuel_price_per_liter: string;
-    client_meal_price: string;
+    driver_meal_price: string;
 }
 
 const props = defineProps<{ setting: SimulationSettingProps }>();
@@ -27,7 +27,7 @@ defineOptions({
 
 const form = useForm({
     fuel_price_per_liter: Number(props.setting.fuel_price_per_liter),
-    client_meal_price: Number(props.setting.client_meal_price),
+    driver_meal_price: Number(props.setting.driver_meal_price),
 });
 
 function submit() {
@@ -41,13 +41,10 @@ function submit() {
     <div class="flex flex-col space-y-6 p-4">
         <Heading
             title="Réglages simulation"
-            description="Montants par défaut utilisés par le calcul automatique du carburant et du repas client dans les simulations."
+            description="Montants par défaut utilisés par le calcul automatique du carburant et du repas chauffeur dans les simulations."
         />
 
-        <form
-            class="grid max-w-sm gap-4"
-            @submit.prevent="submit"
-        >
+        <form class="grid max-w-sm gap-4" @submit.prevent="submit">
             <div class="grid gap-1">
                 <Label for="fuel_price_per_liter">
                     Prix du litre de carburant (Ar)
@@ -66,23 +63,27 @@ function submit() {
             </div>
 
             <div class="grid gap-1">
-                <Label for="client_meal_price">
-                    Prix du repas client (Ar)
+                <Label for="driver_meal_price">
+                    Prix du repas chauffeur (Ar)
                 </Label>
                 <Input
-                    id="client_meal_price"
+                    id="driver_meal_price"
                     type="number"
                     min="0"
                     step="0.01"
-                    :model-value="form.client_meal_price"
+                    :model-value="form.driver_meal_price"
                     @update:model-value="
-                        (v) => (form.client_meal_price = Number(v))
+                        (v) => (form.driver_meal_price = Number(v))
                     "
                 />
-                <InputError :message="form.errors.client_meal_price" />
+                <InputError :message="form.errors.driver_meal_price" />
             </div>
 
-            <Button type="submit" class="justify-self-start" :disabled="form.processing">
+            <Button
+                type="submit"
+                class="justify-self-start"
+                :disabled="form.processing"
+            >
                 Enregistrer
             </Button>
         </form>

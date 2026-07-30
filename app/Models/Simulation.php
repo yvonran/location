@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'vehicle_id', 'number_of_days', 'departure_time', 'distance_km', 'same_return_route', 'daily_rate',
-    'meal_included', 'fuel_included', 'meal_cost', 'fuel_cost', 'vehicle_amount', 'total',
+    'meal_charged_to_client', 'fuel_charged_to_client', 'meal_cost', 'fuel_cost', 'vehicle_amount', 'total',
 ])]
 class Simulation extends Model
 {
@@ -23,8 +23,8 @@ class Simulation extends Model
             'distance_km' => 'decimal:2',
             'same_return_route' => 'boolean',
             'daily_rate' => 'decimal:2',
-            'meal_included' => 'boolean',
-            'fuel_included' => 'boolean',
+            'meal_charged_to_client' => 'boolean',
+            'fuel_charged_to_client' => 'boolean',
             'meal_cost' => 'decimal:2',
             'fuel_cost' => 'decimal:2',
             'vehicle_amount' => 'decimal:2',
