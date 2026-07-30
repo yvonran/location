@@ -8,6 +8,7 @@ import { create, show } from '@/routes/quotes';
 
 interface QuoteRow {
     id: number;
+    uid: string;
     number: string;
     quote_date: string;
     status: 'draft' | 'sent' | 'accepted' | 'rejected';
@@ -79,7 +80,7 @@ const statusLabels: Record<QuoteRow['status'], string> = {
                     >
                         <td class="p-3">
                             <Link
-                                :href="show(quote.id).url"
+                                :href="show(quote.uid).url"
                                 class="underline"
                                 >{{ quote.number }}</Link
                             >

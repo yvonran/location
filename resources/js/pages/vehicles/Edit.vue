@@ -58,7 +58,7 @@ defineOptions({
                 </p>
             </div>
 
-            <RentalConditionForm :vehicle-id="vehicle.id" :zones="zones" />
+            <RentalConditionForm :vehicle-uid="vehicle.uid" :zones="zones" />
         </section>
     </div>
 </template>

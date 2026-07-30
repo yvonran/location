@@ -10,6 +10,7 @@ import type { RentalZone } from '@/types/rental';
 defineProps<{
     vehicle: {
         id: number;
+        uid: string;
         name: string;
         registration_number: string;
         vehicle_model?: {
@@ -40,6 +41,6 @@ defineOptions({
             :description="`${vehicle.name} — ${vehicleIdentity(vehicle)} (${vehicle.registration_number})`"
         />
 
-        <RentalConditionForm :vehicle-id="vehicle.id" :zones="zones" />
+        <RentalConditionForm :vehicle-uid="vehicle.uid" :zones="zones" />
     </div>
 </template>

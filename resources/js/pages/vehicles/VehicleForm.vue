@@ -159,7 +159,7 @@ function submit() {
             delete payload.zones;
 
             return payload;
-        }).post(update(props.vehicle.id).url, { forceFormData: true });
+        }).post(update(props.vehicle.uid).url, { forceFormData: true });
 
         return;
     }

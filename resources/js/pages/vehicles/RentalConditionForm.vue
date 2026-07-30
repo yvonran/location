@@ -8,7 +8,7 @@ import { update } from '@/routes/vehicles/conditions';
 import type { RentalZone } from '@/types/rental';
 
 const props = defineProps<{
-    vehicleId: number;
+    vehicleUid: string;
     zones: RentalZone[];
 }>();
 
@@ -19,7 +19,7 @@ const form = useForm({
 const errors = computed(() => form.errors as Record<string, string>);
 
 function submit() {
-    form.put(update(props.vehicleId).url);
+    form.put(update(props.vehicleUid).url);
 }
 </script>
 

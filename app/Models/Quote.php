@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\QuoteStatus;
 use App\Models\Concerns\BelongsToUser;
+use App\Models\Concerns\HasPublicUid;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['number', 'customer_id', 'user_id', 'quote_date', 'status', 'subtotal', 'total', 'notes'])]
 class Quote extends Model
 {
-    use BelongsToUser, HasFactory, SoftDeletes;
+    use BelongsToUser, HasPublicUid, HasFactory, SoftDeletes;
 
     protected function casts(): array
     {

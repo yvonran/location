@@ -80,7 +80,7 @@ function remove(vehicle: Vehicle) {
         return;
     }
 
-    router.delete(destroy(vehicle.id).url, { preserveScroll: true });
+    router.delete(destroy(vehicle.uid).url, { preserveScroll: true });
 }
 </script>
 
@@ -195,7 +195,7 @@ function remove(vehicle: Vehicle) {
                             <div class="flex justify-end gap-1">
                                 <Button variant="ghost" size="sm" as-child>
                                     <Link
-                                        :href="editConditions(vehicle.id).url"
+                                        :href="editConditions(vehicle.uid).url"
                                         :title="`Conditions de location de ${vehicle.name}`"
                                     >
                                         <Coins class="size-4" />
@@ -203,7 +203,7 @@ function remove(vehicle: Vehicle) {
                                 </Button>
                                 <Button variant="ghost" size="sm" as-child>
                                     <Link
-                                        :href="edit(vehicle.id).url"
+                                        :href="edit(vehicle.uid).url"
                                         :title="`Modifier ${vehicle.name}`"
                                     >
                                         <Pencil class="size-4" />

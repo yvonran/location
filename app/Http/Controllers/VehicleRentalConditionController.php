@@ -16,7 +16,8 @@ class VehicleRentalConditionController extends Controller
     public function edit(Vehicle $vehicle): Response
     {
         return Inertia::render('vehicles/RentalCondition', [
-            'vehicle' => $vehicle->only(['id', 'name', 'brand', 'model', 'registration_number']),
+            'vehicle' => $vehicle->loadMissing('vehicleModel.brand')
+                ->only(['id', 'uid', 'name', 'registration_number', 'vehicle_model']),
             ...$this->rentalConditionService->editorProps($vehicle),
         ]);
     }

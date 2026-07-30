@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\VehicleStatus;
 use App\Models\Concerns\BelongsToUser;
+use App\Models\Concerns\HasPublicUid;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['user_id', 'name', 'vehicle_model_id', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
 class Vehicle extends Model
 {
-    use BelongsToUser, HasFactory, SoftDeletes;
+    use BelongsToUser, HasPublicUid, HasFactory, SoftDeletes;
 
     protected $appends = ['image_url'];
 

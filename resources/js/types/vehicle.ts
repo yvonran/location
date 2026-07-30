@@ -9,6 +9,8 @@ export type VehicleStatusOption = {
 
 export type Vehicle = {
     id: number;
+    /** Identifiant public utilisé dans les URL. */
+    uid: string;
     name: string;
     vehicle_model_id: number | null;
     vehicle_model?: VehicleModel | null;

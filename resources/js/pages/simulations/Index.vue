@@ -7,6 +7,7 @@ import { create, show } from '@/routes/simulations';
 
 interface SimulationRow {
     id: number;
+    uid: string;
     number_of_days: number;
     distance_km: string;
     total: string;
@@ -69,7 +70,7 @@ function formatAr(value: string | number): string {
                     >
                         <td class="p-3">
                             <Link
-                                :href="show(simulation.id).url"
+                                :href="show(simulation.uid).url"
                                 class="underline"
                                 >{{ simulation.vehicle.name }}</Link
                             >
