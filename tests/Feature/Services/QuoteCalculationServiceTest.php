@@ -6,8 +6,8 @@ use App\Enums\AmountMode;
 use App\Exceptions\NoTariffFoundException;
 use App\Models\Customer;
 use App\Models\OptionType;
+use App\Models\RentalCondition;
 use App\Models\ServiceType;
-use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
@@ -19,6 +19,13 @@ class QuoteCalculationServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function givenRentalRate(Vehicle $vehicle, ?int $maxKm, int $minDays, ?int $maxDays, float $dailyRate): void
+    {
+        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
+        $zone = $condition->rentalZones()->create(['name' => 'Zone', 'max_km' => $maxKm, 'position' => 0]);
+        $zone->rentalRates()->create(['min_days' => $minDays, 'max_days' => $maxDays, 'daily_rate' => $dailyRate]);
+    }
+
     public function test_it_calculates_a_line_with_service_coefficient_option_and_discount(): void
     {
         $vehicle = Vehicle::create([
@@ -27,12 +34,7 @@ class QuoteCalculationServiceTest extends TestCase
             'has_air_conditioning' => true,
         ]);
 
-        Tariff::create([
-            'vehicle_id' => $vehicle->id,
-            'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5,
-            'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
 
         $serviceType = ServiceType::create(['name' => 'Transfert', 'coefficient' => 2]);
         $optionType = OptionType::create([
@@ -80,10 +82,7 @@ class QuoteCalculationServiceTest extends TestCase
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
         $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
         $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
         $user = User::factory()->create();
@@ -112,10 +111,7 @@ class QuoteCalculationServiceTest extends TestCase
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
         $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
         $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
         $user = User::factory()->create();

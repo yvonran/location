@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class SimulationCalculationService
 {
     public function __construct(
-        private readonly TariffService $tariffService,
+        private readonly RentalConditionService $rentalConditionService,
         private readonly DriverMealCalculator $mealCalculator,
     ) {}
 
@@ -36,7 +36,7 @@ class SimulationCalculationService
      * @return array{
      *     vehicle_id: int, number_of_days: int, departure_time: ?string, distance_km: float,
      *     daily_rate: float, meal_included: bool, fuel_included: bool, meal_cost: float,
-     *     fuel_cost: float, vehicle_amount: float, total: float, legs: array
+     *     fuel_cost: float, vehicle_amount: float, total: float, same_return_route: bool, legs: array
      * }
      */
     public function calculate(array $input): array
@@ -46,18 +46,34 @@ class SimulationCalculationService
         $departureTime = $input['departure_time'] ?? null;
         $mealIncluded = (bool) ($input['meal_included'] ?? false);
         $fuelIncluded = (bool) ($input['fuel_included'] ?? false);
+        $sameReturnRoute = (bool) ($input['same_return_route'] ?? false);
 
-        $legs = array_values($input['legs'] ?? []);
-        $distanceKm = round(array_sum(array_map(
+        $legsInput = $input['legs'] ?? [];
+        $outboundLegs = array_values($legsInput['outbound'] ?? []);
+
+        $returnLegs = $sameReturnRoute
+            ? array_map(fn (array $leg) => [
+                'from_point' => $leg['to_point'],
+                'to_point' => $leg['from_point'],
+                'distance_km' => (float) $leg['distance_km'],
+            ], array_reverse($outboundLegs))
+            : array_values($legsInput['return'] ?? []);
+
+        $outboundDistanceKm = round(array_sum(array_map(
             fn (array $leg) => (float) $leg['distance_km'],
-            $legs,
+            $outboundLegs,
         )), 2);
+        $returnDistanceKm = round(array_sum(array_map(
+            fn (array $leg) => (float) $leg['distance_km'],
+            $returnLegs,
+        )), 2);
+        $distanceKm = round($outboundDistanceKm + $returnDistanceKm, 2);
 
-        $tariff = $this->tariffService->findRate($vehicle, $distanceKm, $numberOfDays);
+        $tariff = $this->rentalConditionService->findRate($vehicle, $outboundDistanceKm, $numberOfDays);
 
         if (! $tariff) {
             throw new NoTariffFoundException(
-                "Aucun tarif trouvé pour {$vehicle->name} sur {$distanceKm} km et {$numberOfDays} jour(s)."
+                "Aucun tarif trouvé pour {$vehicle->name} sur {$outboundDistanceKm} km (aller) et {$numberOfDays} jour(s)."
             );
         }
 
@@ -77,6 +93,21 @@ class SimulationCalculationService
             (float) $settings->client_meal_price,
         );
 
+        $legs = [
+            ...array_map(fn (array $leg) => [
+                'from_point' => $leg['from_point'],
+                'to_point' => $leg['to_point'],
+                'distance_km' => (float) $leg['distance_km'],
+                'direction' => 'outbound',
+            ], $outboundLegs),
+            ...array_map(fn (array $leg) => [
+                'from_point' => $leg['from_point'],
+                'to_point' => $leg['to_point'],
+                'distance_km' => (float) $leg['distance_km'],
+                'direction' => 'return',
+            ], $returnLegs),
+        ];
+
         return [
             'vehicle_id' => $vehicle->id,
             'number_of_days' => $numberOfDays,
@@ -89,11 +120,8 @@ class SimulationCalculationService
             'fuel_cost' => $fuelCost,
             'vehicle_amount' => $vehicleAmount,
             'total' => round($vehicleAmount + $fuelCost + $mealCost, 2),
-            'legs' => array_map(fn (array $leg) => [
-                'from_point' => $leg['from_point'],
-                'to_point' => $leg['to_point'],
-                'distance_km' => (float) $leg['distance_km'],
-            ], $legs),
+            'same_return_route' => $sameReturnRoute,
+            'legs' => $legs,
         ];
     }
 }

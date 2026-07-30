@@ -22,10 +22,15 @@ class StoreSimulationRequest extends FormRequest
             'departure_time' => ['nullable', 'date_format:H:i'],
             'meal_included' => ['boolean'],
             'fuel_included' => ['boolean'],
-            'legs' => ['required', 'array', 'min:1'],
-            'legs.*.from_point' => ['required', 'string', 'max:255'],
-            'legs.*.to_point' => ['required', 'string', 'max:255'],
-            'legs.*.distance_km' => ['required', 'numeric', 'min:0'],
+            'same_return_route' => ['boolean'],
+            'legs.outbound' => ['required', 'array', 'min:1'],
+            'legs.outbound.*.from_point' => ['required', 'string', 'max:255'],
+            'legs.outbound.*.to_point' => ['required', 'string', 'max:255'],
+            'legs.outbound.*.distance_km' => ['required', 'numeric', 'min:0'],
+            'legs.return' => ['required_if:same_return_route,false', 'array', 'min:1'],
+            'legs.return.*.from_point' => ['required', 'string', 'max:255'],
+            'legs.return.*.to_point' => ['required', 'string', 'max:255'],
+            'legs.return.*.distance_km' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -38,10 +43,14 @@ class StoreSimulationRequest extends FormRequest
             'vehicle_id' => 'véhicule',
             'number_of_days' => 'nombre de jours',
             'departure_time' => 'heure de départ',
-            'legs' => 'trajet',
-            'legs.*.from_point' => 'point de départ',
-            'legs.*.to_point' => 'point d\'arrivée',
-            'legs.*.distance_km' => 'kilométrage',
+            'legs.outbound' => 'trajet aller',
+            'legs.outbound.*.from_point' => 'point de départ',
+            'legs.outbound.*.to_point' => 'point d\'arrivée',
+            'legs.outbound.*.distance_km' => 'kilométrage aller',
+            'legs.return' => 'trajet retour',
+            'legs.return.*.from_point' => 'point de départ (retour)',
+            'legs.return.*.to_point' => 'point d\'arrivée (retour)',
+            'legs.return.*.distance_km' => 'kilométrage retour',
         ];
     }
 }

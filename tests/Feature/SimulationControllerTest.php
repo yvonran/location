@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\RentalCondition;
 use App\Models\Simulation;
-use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
@@ -28,6 +28,13 @@ class SimulationControllerTest extends TestCase
         ]);
     }
 
+    private function givenRentalRate(Vehicle $vehicle, ?int $maxKm, int $minDays, ?int $maxDays, float $dailyRate): void
+    {
+        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
+        $zone = $condition->rentalZones()->create(['name' => 'Zone', 'max_km' => $maxKm, 'position' => 0]);
+        $zone->rentalRates()->create(['min_days' => $minDays, 'max_days' => $maxDays, 'daily_rate' => $dailyRate]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -38,8 +45,11 @@ class SimulationControllerTest extends TestCase
             'number_of_days' => 3,
             'meal_included' => true,
             'fuel_included' => true,
+            'same_return_route' => true,
             'legs' => [
-                ['from_point' => 'Antananarivo', 'to_point' => 'Toamasina', 'distance_km' => 450],
+                'outbound' => [
+                    ['from_point' => 'Antananarivo', 'to_point' => 'Toamasina', 'distance_km' => 450],
+                ],
             ],
         ], $overrides);
     }
@@ -59,16 +69,14 @@ class SimulationControllerTest extends TestCase
     public function test_a_simulation_can_be_created_in_one_request(): void
     {
         $vehicle = $this->vehicle();
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
 
         $response = $this->actingAs($this->user())
             ->post(route('simulations.store'), $this->payload($vehicle));
 
         $this->assertDatabaseCount('simulations', 1);
-        $this->assertDatabaseCount('simulation_legs', 1);
+        // Le trajet aller est dupliqué en miroir pour le retour (same_return_route).
+        $this->assertDatabaseCount('simulation_legs', 2);
 
         $simulation = Simulation::firstOrFail();
         $response->assertRedirect(route('simulations.show', $simulation));
@@ -90,17 +98,14 @@ class SimulationControllerTest extends TestCase
         $vehicle = $this->vehicle();
 
         $this->actingAs($this->user())
-            ->post(route('simulations.store'), $this->payload($vehicle, ['legs' => []]))
-            ->assertSessionHasErrors('legs');
+            ->post(route('simulations.store'), $this->payload($vehicle, ['legs' => ['outbound' => []]]))
+            ->assertSessionHasErrors('legs.outbound');
     }
 
     public function test_the_show_page_displays_the_simulation(): void
     {
         $vehicle = $this->vehicle();
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
         $this->actingAs($this->user())->post(route('simulations.store'), $this->payload($vehicle));
         $simulation = Simulation::firstOrFail();
 
@@ -109,6 +114,6 @@ class SimulationControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('simulations/Show')
-                ->has('simulation.legs', 1));
+                ->has('simulation.legs', 2));
     }
 }

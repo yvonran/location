@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { Plus, Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -18,6 +17,7 @@ import {
 import { vehicleIdentity } from '@/lib/vehicles';
 import { dashboard } from '@/routes';
 import { store } from '@/routes/simulations';
+import TripLegsEditor from './TripLegsEditor.vue';
 
 interface Vehicle {
     id: number;
@@ -39,14 +39,8 @@ defineOptions({
     },
 });
 
-interface LegState {
-    from_point: string;
-    to_point: string;
-    distance_km: number | null;
-}
-
-function makeLeg(): LegState {
-    return { from_point: '', to_point: '', distance_km: null };
+function makeLeg() {
+    return { from_point: '', to_point: '', distance_km: null as number | null };
 }
 
 const form = useForm({
@@ -55,21 +49,20 @@ const form = useForm({
     departure_time: '',
     meal_included: false,
     fuel_included: false,
-    legs: [makeLeg(), makeLeg()],
+    same_return_route: true,
+    legs: {
+        outbound: [makeLeg()],
+        return: [makeLeg()],
+    },
 });
-
-function addLeg() {
-    form.legs.push(makeLeg());
-}
-
-function removeLeg(index: number) {
-    form.legs.splice(index, 1);
-}
 
 function submit() {
     form.transform((data) => ({
         ...data,
         departure_time: data.departure_time || null,
+        legs: data.same_return_route
+            ? { outbound: data.legs.outbound }
+            : data.legs,
     })).post(store().url);
 }
 
@@ -135,107 +128,32 @@ const errors = computed(() => form.errors as Record<string, string>);
                 </div>
             </div>
 
-            <div class="space-y-3">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-sm font-medium">Trajet</h3>
-                        <p class="text-xs text-muted-foreground">
-                            Un tronçon par étape, dans l'ordre (point A → point
-                            B, B → C, … retour).
-                        </p>
-                    </div>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        @click="addLeg"
-                    >
-                        <Plus class="size-4" />
-                        Ajouter un tronçon
-                    </Button>
-                </div>
+            <TripLegsEditor
+                v-model="form.legs.outbound"
+                title="Aller"
+                prefix="legs.outbound"
+                :errors="errors"
+            />
 
-                <InputError :message="errors.legs" />
-
-                <div
-                    v-for="(leg, index) in form.legs"
-                    :key="index"
-                    class="grid items-start gap-3 rounded-lg border border-sidebar-border/70 p-3 sm:grid-cols-[1fr_1fr_auto_auto] dark:border-sidebar-border"
-                >
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`from_point_${index}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Point de départ
-                        </Label>
-                        <Input
-                            :id="`from_point_${index}`"
-                            v-model="leg.from_point"
-                            placeholder="Ex : Antananarivo"
-                        />
-                        <InputError
-                            :message="errors[`legs.${index}.from_point`]"
-                        />
-                    </div>
-
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`to_point_${index}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Point d'arrivée
-                        </Label>
-                        <Input
-                            :id="`to_point_${index}`"
-                            v-model="leg.to_point"
-                            placeholder="Ex : Toamasina"
-                        />
-                        <InputError
-                            :message="errors[`legs.${index}.to_point`]"
-                        />
-                    </div>
-
-                    <div class="grid gap-1">
-                        <Label
-                            :for="`distance_${index}`"
-                            class="text-xs text-muted-foreground"
-                        >
-                            Distance (km)
-                        </Label>
-                        <Input
-                            :id="`distance_${index}`"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            class="w-28"
-                            :model-value="leg.distance_km ?? undefined"
-                            @update:model-value="
-                                (v) =>
-                                    (leg.distance_km =
-                                        v === '' || v === null
-                                            ? null
-                                            : Number(v))
-                            "
-                        />
-                        <InputError
-                            :message="errors[`legs.${index}.distance_km`]"
-                        />
-                    </div>
-
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        class="mt-5 text-destructive hover:text-destructive"
-                        :disabled="form.legs.length === 1"
-                        title="Retirer ce tronçon"
-                        @click="removeLeg(index)"
-                    >
-                        <Trash2 class="size-4" />
-                    </Button>
-                </div>
+            <div
+                class="flex items-center gap-3 rounded-lg border border-sidebar-border/70 p-3 dark:border-sidebar-border"
+            >
+                <Checkbox
+                    id="same_return_route"
+                    v-model="form.same_return_route"
+                />
+                <Label for="same_return_route" class="font-normal">
+                    Utiliser le même trajet pour le retour
+                </Label>
             </div>
+
+            <TripLegsEditor
+                v-if="!form.same_return_route"
+                v-model="form.legs.return"
+                title="Retour"
+                prefix="legs.return"
+                :errors="errors"
+            />
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <div

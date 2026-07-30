@@ -17,6 +17,7 @@ interface VehicleRef {
 interface SimulationLeg {
     id: number;
     position: number;
+    direction: 'outbound' | 'return';
     from_point: string;
     to_point: string;
     distance_km: string;
@@ -27,6 +28,7 @@ interface SimulationProps {
     number_of_days: number;
     departure_time: string | null;
     distance_km: string;
+    same_return_route: boolean;
     daily_rate: string;
     meal_included: boolean;
     fuel_included: boolean;
@@ -64,17 +66,45 @@ function formatAr(value: string | number): string {
         />
 
         <div
-            class="space-y-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+            class="space-y-4 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
         >
-            <h2 class="text-sm font-medium">Trajet</h2>
-            <ol class="space-y-1 text-sm">
-                <li v-for="leg in props.simulation.legs" :key="leg.id">
-                    {{ leg.from_point }} → {{ leg.to_point }} ({{
-                        leg.distance_km
-                    }}
-                    km)
-                </li>
-            </ol>
+            <div>
+                <h2 class="text-sm font-medium">Aller</h2>
+                <ol class="space-y-1 text-sm">
+                    <li
+                        v-for="leg in props.simulation.legs.filter(
+                            (leg) => leg.direction === 'outbound',
+                        )"
+                        :key="leg.id"
+                    >
+                        {{ leg.from_point }} → {{ leg.to_point }} ({{
+                            leg.distance_km
+                        }}
+                        km)
+                    </li>
+                </ol>
+            </div>
+            <div>
+                <h2 class="text-sm font-medium">
+                    Retour
+                    <Badge v-if="props.simulation.same_return_route" variant="secondary">
+                        Même trajet que l'aller
+                    </Badge>
+                </h2>
+                <ol class="space-y-1 text-sm">
+                    <li
+                        v-for="leg in props.simulation.legs.filter(
+                            (leg) => leg.direction === 'return',
+                        )"
+                        :key="leg.id"
+                    >
+                        {{ leg.from_point }} → {{ leg.to_point }} ({{
+                            leg.distance_km
+                        }}
+                        km)
+                    </li>
+                </ol>
+            </div>
             <p class="text-xs text-muted-foreground">
                 Distance totale : {{ props.simulation.distance_km }} km
             </p>

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['simulation_id', 'position', 'from_point', 'to_point', 'distance_km'])]
+#[Fillable(['simulation_id', 'position', 'direction', 'from_point', 'to_point', 'distance_km'])]
 class SimulationLeg extends Model
 {
     use HasFactory;

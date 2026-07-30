@@ -13,9 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class QuoteCalculationService
 {
-    public function __construct(private readonly TariffService $tariffService)
-    {
-    }
+    public function __construct(private readonly RentalConditionService $rentalConditionService) {}
 
     public function createQuote(int $customerId, int $userId, array $linesInput, ?string $notes = null): Quote
     {
@@ -77,7 +75,7 @@ class QuoteCalculationService
 
         $numberOfDays = (int) $input['number_of_days'];
 
-        $tariff = $this->tariffService->findRate($vehicle, $distanceKm, $numberOfDays);
+        $tariff = $this->rentalConditionService->findRate($vehicle, $distanceKm, $numberOfDays);
 
         if (! $tariff) {
             throw new NoTariffFoundException(

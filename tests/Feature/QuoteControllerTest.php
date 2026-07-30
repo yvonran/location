@@ -6,8 +6,8 @@ use App\Enums\AmountMode;
 use App\Models\Customer;
 use App\Models\OptionType;
 use App\Models\Quote;
+use App\Models\RentalCondition;
 use App\Models\ServiceType;
-use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
@@ -17,6 +17,13 @@ use Tests\TestCase;
 class QuoteControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function givenRentalRate(Vehicle $vehicle, ?int $maxKm, int $minDays, ?int $maxDays, float $dailyRate): void
+    {
+        $condition = RentalCondition::create(['vehicle_id' => $vehicle->id]);
+        $zone = $condition->rentalZones()->create(['name' => 'Zone', 'max_km' => $maxKm, 'position' => 0]);
+        $zone->rentalRates()->create(['min_days' => $minDays, 'max_days' => $maxDays, 'daily_rate' => $dailyRate]);
+    }
 
     public function test_guests_are_redirected_to_login(): void
     {
@@ -41,10 +48,7 @@ class QuoteControllerTest extends TestCase
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
         $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
         $optionType = OptionType::create([
             'name' => 'Assurance', 'default_mode' => AmountMode::Percentage, 'default_value' => 5,
@@ -83,10 +87,7 @@ class QuoteControllerTest extends TestCase
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
-        Tariff::create([
-            'vehicle_id' => $vehicle->id, 'min_distance_km' => 0, 'max_distance_km' => 799,
-            'min_days' => 1, 'max_days' => 5, 'daily_rate' => 250000,
-        ]);
+        $this->givenRentalRate($vehicle, 799, 1, 5, 250000);
         $serviceType = ServiceType::create(['name' => 'Location', 'coefficient' => 1]);
 
         $this->actingAs($user)->post(route('quotes.store'), [
