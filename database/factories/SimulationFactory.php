@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Simulation;
+use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,6 +17,7 @@ class SimulationFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory(),
             'vehicle_id' => Vehicle::factory(),
             'number_of_days' => fake()->numberBetween(1, 10),
             'departure_time' => null,

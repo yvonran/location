@@ -12,9 +12,13 @@ class VehicleRentalConditionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?User $actingUser = null;
+
     private function user(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        // Mémorisé : le cloisonnement impose que l'acteur et les données
+        // manipulées soient bien le même compte d'un bout à l'autre du test.
+        return $this->actingUser ??= User::factory()->create(['email_verified_at' => now()]);
     }
 
     /**
@@ -52,14 +56,14 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_guests_are_redirected_to_login(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->get(route('vehicles.conditions.edit', $vehicle))->assertRedirect(route('login'));
     }
 
     public function test_the_form_opens_with_the_default_zones_for_a_vehicle_without_conditions(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->actingAs($this->user())
             ->get(route('vehicles.conditions.edit', $vehicle))
@@ -74,7 +78,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_vehicle_edit_page_carries_the_same_zones(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
         $this->save($vehicle, $this->payload());
 
         $this->actingAs($this->user())
@@ -88,7 +92,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_saving_conditions_from_the_vehicle_edit_page_returns_there(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->actingAs($this->user())
             ->from(route('vehicles.edit', $vehicle))
@@ -98,7 +102,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_zones_and_rates_are_created_on_first_save(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, $this->payload())
             ->assertRedirect(route('vehicles.conditions.edit', $vehicle));
@@ -118,7 +122,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_a_user_can_define_any_number_of_zones_with_their_own_names(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -138,7 +142,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_a_single_open_zone_is_enough(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -152,7 +156,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_saving_replaces_the_previous_zones_instead_of_appending(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
         $this->save($vehicle, $this->payload())->assertSessionHasNoErrors();
 
         $this->save($vehicle, [
@@ -169,14 +173,14 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_at_least_one_zone_is_required(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, ['zones' => []])->assertSessionHasErrors('zones');
     }
 
     public function test_a_zone_needs_a_name(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [['name' => '', 'max_km' => null, 'rates' => []]],
@@ -185,7 +189,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_bounds_must_increase(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -198,7 +202,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_only_the_last_zone_may_be_open_ended(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -210,7 +214,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_last_zone_must_be_open_ended(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -222,7 +226,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_overlapping_day_ranges_in_the_same_zone_are_rejected(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [[
@@ -240,7 +244,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_same_day_range_in_two_different_zones_is_allowed(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [
@@ -254,7 +258,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_a_rate_must_carry_a_positive_amount_and_a_coherent_range(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [['name' => 'A', 'max_km' => null, 'rates' => [['min_days' => 1, 'max_days' => null, 'daily_rate' => -5]]]],
@@ -267,7 +271,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_a_zone_can_be_saved_without_any_rate(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [['name' => 'À tarifer plus tard', 'max_km' => null, 'rates' => []]],
@@ -279,7 +283,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_a_rate_can_mark_the_driver_meal_as_included_or_priced(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [[
@@ -302,7 +306,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_saved_zones_are_returned_when_reopening_the_form(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
         $this->save($vehicle, $this->payload());
 
         $this->actingAs($this->user())
@@ -317,7 +321,7 @@ class VehicleRentalConditionControllerTest extends TestCase
 
     public function test_the_meal_fields_are_returned_when_reopening_the_form(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->save($vehicle, [
             'zones' => [[

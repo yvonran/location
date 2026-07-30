@@ -42,8 +42,9 @@ class QuoteControllerTest extends TestCase
     public function test_an_authenticated_user_can_create_a_quote_in_one_request(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Jean Rakoto', 'phone' => '0341234567']);
         $vehicle = Vehicle::create([
+            'user_id' => $user->id,
             'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
@@ -81,8 +82,9 @@ class QuoteControllerTest extends TestCase
     public function test_a_malformed_departure_time_is_rejected(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Jean Rakoto', 'phone' => '0341234567']);
         $vehicle = Vehicle::create([
+            'user_id' => $user->id,
             'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
@@ -110,8 +112,9 @@ class QuoteControllerTest extends TestCase
     public function test_it_returns_a_validation_error_when_no_tariff_matches(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $customer = Customer::create(['name' => 'Jean Rakoto', 'phone' => '0341234567']);
+        $customer = Customer::create(['user_id' => $user->id, 'name' => 'Jean Rakoto', 'phone' => '0341234567']);
         $vehicle = Vehicle::create([
+            'user_id' => $user->id,
             'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\VehicleStatus;
+use App\Models\Concerns\BelongsToUser;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,10 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'vehicle_model_id', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
+#[Fillable(['user_id', 'name', 'vehicle_model_id', 'seats', 'registration_number', 'year', 'has_air_conditioning', 'average_consumption', 'status', 'image_path'])]
 class Vehicle extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToUser, HasFactory, SoftDeletes;
 
     protected $appends = ['image_url'];
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,12 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'vehicle_id', 'number_of_days', 'departure_time', 'distance_km', 'same_return_route', 'daily_rate',
+    'user_id', 'vehicle_id', 'number_of_days', 'departure_time', 'distance_km', 'same_return_route', 'daily_rate',
     'meal_charged_to_client', 'fuel_charged_to_client', 'meal_cost', 'fuel_cost', 'vehicle_amount', 'total',
 ])]
 class Simulation extends Model
 {
-    use HasFactory;
+    use BelongsToUser, HasFactory;
 
     protected function casts(): array
     {

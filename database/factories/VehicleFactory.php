@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\VehicleStatus;
+use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,6 +18,7 @@ class VehicleFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory(),
             'name' => fake()->words(2, true),
             'vehicle_model_id' => VehicleModel::factory(),
             'seats' => fake()->numberBetween(4, 30),

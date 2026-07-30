@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Customer;
+use App\Models\Vehicle;
+use App\Rules\OwnedRecord;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreQuoteRequest extends FormRequest
@@ -14,10 +17,10 @@ class StoreQuoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'customer_id' => ['required', 'integer', new OwnedRecord(Customer::class)],
             'notes' => ['nullable', 'string'],
             'lines' => ['required', 'array', 'min:1'],
-            'lines.*.vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
+            'lines.*.vehicle_id' => ['required', 'integer', new OwnedRecord(Vehicle::class)],
             'lines.*.route_id' => ['nullable', 'integer', 'exists:routes,id'],
             'lines.*.distance_km' => ['required_without:lines.*.route_id', 'nullable', 'numeric', 'min:0'],
             'lines.*.service_type_id' => ['required', 'integer', 'exists:service_types,id'],

@@ -30,12 +30,18 @@ class DatabaseSeeder extends Seeder
 
         $superAdmin = Role::firstOrCreate(['name' => Roles::SuperAdmin, 'guard_name' => 'web']);
 
-        User::factory()->create([
+        $owner = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ])->assignRole($superAdmin);
+        ]);
+        $owner->assignRole($superAdmin);
+
+        // Sans propriétaire, les données de démonstration seraient invisibles :
+        // la portée globale filtre sur le compte connecté.
+        auth()->login($owner);
 
         $starex = Vehicle::create([
+            'user_id' => $owner->id,
             'name' => 'Starex 1',
             'vehicle_model_id' => $this->modelId('Hyundai', 'Starex'),
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
@@ -43,6 +49,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $landCruiser = Vehicle::create([
+            'user_id' => $owner->id,
             'name' => 'Land Cruiser 1',
             'vehicle_model_id' => $this->modelId('Toyota', 'Land Cruiser'),
             'seats' => 7, 'registration_number' => '5678 TBB', 'year' => 2019,
@@ -139,12 +146,14 @@ class DatabaseSeeder extends Seeder
         }
 
         Customer::create([
+            'user_id' => $owner->id,
             'name' => 'Hery Rakotondrabe', 'phone' => '0341112233',
             'email' => 'hery.rakoto@example.mg', 'address' => 'Analakely, Antananarivo',
             'tax_id' => 'NIF0012345',
         ]);
 
         Customer::create([
+            'user_id' => $owner->id,
             'name' => 'Voahangy Rasoanaivo', 'phone' => '0331234567',
             'email' => 'voahangy.rasoanaivo@example.mg', 'address' => 'Isotry, Antananarivo',
         ]);

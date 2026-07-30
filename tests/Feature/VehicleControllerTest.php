@@ -17,9 +17,13 @@ class VehicleControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?User $actingUser = null;
+
     private function user(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        // Mémorisé : le cloisonnement impose que l'acteur et les données
+        // manipulées soient bien le même compte d'un bout à l'autre du test.
+        return $this->actingUser ??= User::factory()->create(['email_verified_at' => now()]);
     }
 
     /**
@@ -59,7 +63,7 @@ class VehicleControllerTest extends TestCase
 
     public function test_the_index_lists_vehicles(): void
     {
-        Vehicle::factory()->count(3)->create();
+        Vehicle::factory()->for($this->user())->count(3)->create();
 
         $this->actingAs($this->user())
             ->get(route('vehicles.index'))
@@ -72,7 +76,7 @@ class VehicleControllerTest extends TestCase
 
     public function test_the_index_paginates_beyond_the_first_page(): void
     {
-        Vehicle::factory()->count(17)->create();
+        Vehicle::factory()->for($this->user())->count(17)->create();
 
         $this->actingAs($this->user())
             ->get(route('vehicles.index'))
@@ -110,7 +114,7 @@ class VehicleControllerTest extends TestCase
     public function test_the_edit_page_still_includes_the_vehicles_own_excluded_model(): void
     {
         $model = VehicleModel::factory()->create(['vehicle_type_id' => null, 'is_supported' => false]);
-        $vehicle = Vehicle::factory()->create(['vehicle_model_id' => $model->id]);
+        $vehicle = Vehicle::factory()->for($this->user())->create(['vehicle_model_id' => $model->id]);
 
         $this->actingAs($this->user())
             ->get(route('vehicles.edit', $vehicle))
@@ -292,7 +296,7 @@ class VehicleControllerTest extends TestCase
 
     public function test_the_registration_number_must_be_unique(): void
     {
-        Vehicle::factory()->create(['registration_number' => '1234 TBA']);
+        Vehicle::factory()->for($this->user())->create(['registration_number' => '1234 TBA']);
 
         $this->actingAs($this->user())
             ->post(route('vehicles.store'), $this->payload())
@@ -314,7 +318,7 @@ class VehicleControllerTest extends TestCase
     {
         Storage::fake('public');
 
-        $vehicle = Vehicle::factory()->create([
+        $vehicle = Vehicle::factory()->for($this->user())->create([
             'image_path' => UploadedFile::fake()->image('old.jpg')->store('vehicles', 'public'),
         ]);
         $oldPath = $vehicle->image_path;
@@ -337,7 +341,7 @@ class VehicleControllerTest extends TestCase
     {
         Storage::fake('public');
 
-        $vehicle = Vehicle::factory()->create([
+        $vehicle = Vehicle::factory()->for($this->user())->create([
             'image_path' => UploadedFile::fake()->image('old.jpg')->store('vehicles', 'public'),
         ]);
         $oldPath = $vehicle->image_path;
@@ -355,7 +359,7 @@ class VehicleControllerTest extends TestCase
 
     public function test_a_vehicle_keeps_its_own_registration_number_on_update(): void
     {
-        $vehicle = Vehicle::factory()->create(['registration_number' => '1234 TBA']);
+        $vehicle = Vehicle::factory()->for($this->user())->create(['registration_number' => '1234 TBA']);
 
         $this->actingAs($this->user())
             ->put(route('vehicles.update', $vehicle), $this->payload(['name' => 'Starex renommé']))
@@ -368,7 +372,7 @@ class VehicleControllerTest extends TestCase
     {
         Storage::fake('public');
 
-        $vehicle = Vehicle::factory()->create(['registration_number' => '1234 TBA']);
+        $vehicle = Vehicle::factory()->for($this->user())->create(['registration_number' => '1234 TBA']);
 
         $this->actingAs($this->user())
             ->post(route('vehicles.update', $vehicle), $this->payload([
@@ -385,7 +389,7 @@ class VehicleControllerTest extends TestCase
 
     public function test_a_vehicle_can_be_deleted(): void
     {
-        $vehicle = Vehicle::factory()->create();
+        $vehicle = Vehicle::factory()->for($this->user())->create();
 
         $this->actingAs($this->user())
             ->delete(route('vehicles.destroy', $vehicle))

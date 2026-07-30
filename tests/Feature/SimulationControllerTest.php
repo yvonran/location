@@ -14,14 +14,19 @@ class SimulationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?User $actingUser = null;
+
     private function user(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        // Mémorisé : le cloisonnement impose que l'acteur et les données
+        // manipulées soient bien le même compte d'un bout à l'autre du test.
+        return $this->actingUser ??= User::factory()->create(['email_verified_at' => now()]);
     }
 
     private function vehicle(): Vehicle
     {
         return Vehicle::create([
+            'user_id' => $this->user()->id,
             'name' => 'Starex 1', 'vehicle_model_id' => VehicleModel::factory()->create()->id,
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true, 'average_consumption' => 10,

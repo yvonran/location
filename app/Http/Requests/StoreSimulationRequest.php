@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Vehicle;
+use App\Rules\OwnedRecord;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSimulationRequest extends FormRequest
@@ -17,7 +19,7 @@ class StoreSimulationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
+            'vehicle_id' => ['required', 'integer', new OwnedRecord(Vehicle::class)],
             'number_of_days' => ['required', 'integer', 'min:1'],
             'departure_time' => ['nullable', 'date_format:H:i'],
             'meal_charged_to_client' => ['boolean'],

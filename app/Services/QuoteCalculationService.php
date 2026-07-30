@@ -157,7 +157,14 @@ class QuoteCalculationService
     private function nextQuoteNumber(): string
     {
         $year = (int) now()->year;
-        $count = Quote::withTrashed()->whereYear('quote_date', $year)->count() + 1;
+
+        // `quotes.number` est unique sur toute la base : la numérotation doit
+        // donc ignorer le cloisonnement, sinon deux comptes produiraient le
+        // même numéro et la contrainte d'unicité sauterait.
+        $count = Quote::withoutGlobalScope('owned')
+            ->withTrashed()
+            ->whereYear('quote_date', $year)
+            ->count() + 1;
 
         return sprintf('QUO-%d-%04d', $year, $count);
     }
