@@ -15,6 +15,7 @@ use App\Models\VehicleModel;
 use App\Support\Roles;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -43,7 +44,7 @@ class DatabaseSeeder extends Seeder
         $starex = Vehicle::create([
             'user_id' => $owner->id,
             'name' => 'Starex 1',
-            'vehicle_model_id' => $this->modelId('Hyundai', 'Starex'),
+            'vehicle_model_id' => $this->modelId('Hyundai', 'Starex SVX'),
             'seats' => 8, 'registration_number' => '1234 TBA', 'year' => 2020,
             'has_air_conditioning' => true,
         ]);
@@ -159,12 +160,31 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Renvoie l'identifiant d'un modèle du référentiel, ou explique ce qui
+     * manque : renommer un modèle dans VehicleReferenceSeeder cassait ce seeder
+     * avec une exception muette.
+     */
     private function modelId(string $brand, string $model): int
     {
-        return VehicleModel::query()
+        $id = VehicleModel::query()
             ->whereRelation('brand', 'name', $brand)
             ->where('name', $model)
-            ->firstOrFail()
-            ->id;
+            ->value('id');
+
+        if ($id !== null) {
+            return $id;
+        }
+
+        $available = VehicleModel::query()
+            ->whereRelation('brand', 'name', $brand)
+            ->orderBy('name')
+            ->pluck('name')
+            ->implode(', ');
+
+        throw new RuntimeException(
+            "Modèle « {$brand} {$model} » introuvable dans le référentiel. "
+            ."Modèles connus pour {$brand} : ".($available ?: 'aucun').'.'
+        );
     }
 }

@@ -14,17 +14,84 @@ class VehicleReferenceSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Modèles absents de la liste importée mais utilisés par l'agence, avec
-     * leur type. Format : marque => [type => [modèles]].
+     * Modèles absents de la liste importée : celle-ci date et ignore aussi bien
+     * les véhicules récents que les marques chinoises désormais courantes à
+     * Madagascar. Ils sont créés puis rattachés à leur type.
+     *
+     * Format : marque => [type => [modèles]].
      */
     private const EXTRA_MODELS = [
         'Hyundai' => [
             'Bus' => ['County'],
-            'Minibus' => ['Starex SVX', 'Starex GRX', 'Grand Starex'],
+            'Minibus' => ['Starex SVX', 'Starex GRX', 'Grand Starex', 'Staria'],
+            'SUV' => ['Creta', 'Venue', 'Palisade'],
+            'Plaisir' => ['Grand i10'],
         ],
         'Nissan' => [
-            'Bus' => ['Urvan'],
-            'Minibus' => ['Civilian'],
+            'Bus' => ['Urvan', 'Civilian'],
+            '4x4' => ['Terra'],
+        ],
+        'Renault' => [
+            'SUV' => ['Duster', 'Kiger'],
+            'Minibus' => ['Triber'],
+            'Plaisir' => ['Kwid', 'Sandero Stepway'],
+        ],
+        'Toyota' => [
+            'Bus' => ['Coaster'],
+            'Minibus' => ['Innova', 'Avanza'],
+            '4x4' => ['Land Cruiser Prado', 'Fortuner'],
+            'SUV' => ['Rush', 'Corolla Cross'],
+        ],
+        'Mitsubishi' => [
+            'Minibus' => ['Xpander'],
+            '4x4' => ['Triton'],
+        ],
+        'Kia' => [
+            'SUV' => ['Seltos', 'Sonet'],
+        ],
+        'Suzuki' => [
+            'Minibus' => ['Ertiga'],
+            'Plaisir' => ['Dzire', 'S-Presso'],
+        ],
+        'Ford' => [
+            '4x4' => ['Everest'],
+        ],
+        'Changan' => [
+            'SUV' => ['CS15', 'CS35 Plus', 'CS55 Plus', 'CS75 Plus'],
+            '4x4' => ['Hunter'],
+            'Plaisir' => ['Alsvin', 'Eado'],
+        ],
+        'Chery' => [
+            'SUV' => ['Tiggo 2', 'Tiggo 4 Pro', 'Tiggo 7 Pro', 'Tiggo 8 Pro'],
+            'Plaisir' => ['Arrizo 5'],
+        ],
+        'Haval' => [
+            'SUV' => ['Jolion', 'H6'],
+            '4x4' => ['Poer'],
+        ],
+        'MG' => [
+            'SUV' => ['ZS', 'HS', 'RX5'],
+            'Plaisir' => ['MG3', 'MG5'],
+        ],
+        'Geely' => [
+            'SUV' => ['Coolray', 'Azkarra'],
+            'Plaisir' => ['Emgrand'],
+        ],
+        'JAC' => [
+            'Minibus' => ['Sunray'],
+            'SUV' => ['S3', 'S7'],
+            '4x4' => ['T6', 'T8'],
+        ],
+        'DFSK' => [
+            'Minibus' => ['Super Cab'],
+            'SUV' => ['Glory 580'],
+        ],
+        'Isuzu' => [
+            '4x4' => ['D-Max'],
+            'SUV' => ['MU-X'],
+        ],
+        'Mahindra' => [
+            '4x4' => ['Scorpio', 'Bolero'],
         ],
     ];
 
@@ -33,28 +100,47 @@ class VehicleReferenceSeeder extends Seeder
      */
     private const TYPE_ASSIGNMENTS = [
         'Bus' => [
+            'Hyundai' => ['H 350', 'H1 Bus'],
             'Mercedes-Benz' => ['Sprinter'],
             'Volkswagen' => ['Crafter', 'Crafter Van', 'Crafter Kombi'],
+            'Ford' => ['Transit', 'Transit Bus'],
         ],
         'Minibus' => [
+            'Hyundai' => ['H1', 'H1 Van', 'H200', 'Trajet'],
+            'Toyota' => ['Hiace', 'Hiace Van', 'Picnic', 'Avensis Van Verso'],
             'Volkswagen' => ['T5 Transporter Shuttle', 'Caravelle', 'Multivan'],
-            'Toyota' => ['Hiace', 'Hiace Van'],
+            'Nissan' => ['Vanette Cargo', 'Serena', 'Primastar', 'Primastar Combi', 'NV200'],
+            'Mercedes-Benz' => ['MB 100'],
+            'Mitsubishi' => ['L300', 'Grandis'],
+            'Renault' => ['Kangoo', 'Kangoo Express', 'Espace', 'Grand Espace'],
         ],
         '4x4' => [
+            'Toyota' => ['Land Cruiser', 'Hilux', '4-Runner', 'FJ Cruiser'],
             'Hyundai' => ['Terracan', 'Galloper'],
-            'Toyota' => ['Land Cruiser', 'Hilux', '4-Runner'],
-            'Mitsubishi' => ['Pajero', 'Pajero Sport', 'L200'],
+            'Mitsubishi' => ['Pajero', 'Pajero Sport', 'Pajero Wagon', 'L200', 'L200 Pick up', 'L200 Pick up Allrad'],
+            'Nissan' => ['Patrol', 'Patrol GR', 'Terrano', 'Navara', 'NP300 Pickup', 'Pickup', 'King Cab'],
+            'Suzuki' => ['Jimny', 'Samurai'],
         ],
         'SUV' => [
+            'Toyota' => ['RAV4', 'Highlander', 'Urban Cruiser'],
+            'Hyundai' => ['Santa Fe', 'Tucson', 'ix35'],
             'Kia' => ['Sorento', 'Sportage'],
             'Dacia' => ['Duster'],
-            'Hyundai' => ['Santa Fe', 'Tucson'],
-            'Toyota' => ['RAV4'],
+            'Nissan' => ['X-Trail', 'Qashqai', 'Murano', 'Juke'],
+            'Renault' => ['Koleos', 'Captur', 'Kadjar'],
+            'Mitsubishi' => ['Outlander', 'ASX'],
+            'Suzuki' => ['Grand Vitara', 'Vitara'],
         ],
         'Plaisir' => [
-            'Hyundai' => ['Getz', 'i10', 'i20', 'Accent'],
+            'Hyundai' => ['Getz', 'i10', 'i20', 'i30', 'Accent', 'Atos', 'Atos Prime', 'Elantra', 'Sonata', 'Matrix'],
+            'Toyota' => ['Yaris', 'Corolla', 'Corolla sedan', 'Corolla Combi', 'Avensis', 'Auris', 'Camry', 'Prius', 'Starlet'],
+            'Renault' => ['Clio', 'Mégane', 'Scénic', 'Twingo', 'Thalia', 'Fluence', 'Laguna'],
+            'Dacia' => ['Logan', 'Logan MCV', 'Sandero'],
+            'Nissan' => ['Micra', 'Almera', 'Sunny', 'Note', 'Tiida', 'Primera'],
+            'Suzuki' => ['Alto', 'Swift', 'Baleno'],
+            'Kia' => ['Picanto', 'Rio', 'Cerato'],
+            'Mitsubishi' => ['Lancer', 'Colt'],
             'Volkswagen' => ['Golf', 'Polo'],
-            'Toyota' => ['Yaris', 'Corolla'],
         ],
     ];
 
@@ -133,7 +219,10 @@ class VehicleReferenceSeeder extends Seeder
 
                 VehicleModel::where('brand_id', $brands[$brandName]->id)
                     ->whereIn('name', $modelNames)
-                    ->update(['vehicle_type_id' => $types[$typeName]->id]);
+                    ->update([
+                        'vehicle_type_id' => $types[$typeName]->id,
+                        'is_supported' => true,
+                    ]);
             }
         }
     }
@@ -151,7 +240,7 @@ class VehicleReferenceSeeder extends Seeder
                 foreach ($modelNames as $modelName) {
                     VehicleModel::updateOrCreate(
                         ['brand_id' => $brand->id, 'name' => $modelName],
-                        ['vehicle_type_id' => $types[$typeName]->id],
+                        ['vehicle_type_id' => $types[$typeName]->id, 'is_supported' => true],
                     );
                 }
             }
